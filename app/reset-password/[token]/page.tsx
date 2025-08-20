@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { Brain } from "lucide-react";
 import {
@@ -8,16 +7,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { RegisterForm } from "@/components/auth/register-form";
+import { ResetPasswordForm } from "@/components/auth/reset-password-form";
 
 interface PageProps {
-  searchParams: Promise<{
-    invite?: string;
+  params: Promise<{
+    token: string;
   }>;
 }
 
-export default async function RegisterPage({ searchParams }: PageProps) {
-  const { invite } = await searchParams;
+export default async function ResetPasswordPage({ params }: PageProps) {
+  const { token } = await params;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -28,34 +27,27 @@ export default async function RegisterPage({ searchParams }: PageProps) {
             <span className="text-2xl font-bold text-foreground">MindMesh</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">
-            Create your account
+            Set new password
           </h1>
           <p className="text-muted-foreground mt-2">
-            {invite
-              ? "Create an account to join the board"
-              : "Join the future of collaborative learning"}
+            Enter your new password below.
           </p>
         </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Sign up</CardTitle>
+            <CardTitle>Reset Password</CardTitle>
             <CardDescription>
-              Enter your information to create your MindMesh account
+              Choose a strong password for your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Suspense fallback={<div>Loading...</div>}>
-              <RegisterForm inviteToken={invite} />
-            </Suspense>
+            <ResetPasswordForm token={token} />
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link
-                  href={invite ? `/login?invite=${invite}` : "/login"}
-                  className="text-primary hover:underline"
-                >
+                Remember your password?{" "}
+                <Link href="/login" className="text-primary hover:underline">
                   Sign in
                 </Link>
               </p>

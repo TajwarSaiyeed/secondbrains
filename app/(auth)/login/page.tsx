@@ -1,8 +1,6 @@
-"use client";
-
-import { useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { Brain } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,28 +8,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Brain, Eye, EyeOff } from "lucide-react";
-import { loginUser } from "@/actions/auth";
+import { LoginForm } from "@/components/auth/login-form";
 
-export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+interface PageProps {
+  searchParams: Promise<{
+    invite?: string;
+    message?: string;
+  }>;
+}
 
-  async function handleSubmit(formData: FormData) {
-    setIsLoading(true);
-    setError("");
-
-    const result = await loginUser(formData);
-
-    if (result?.error) {
-      setError(result.error);
-      setIsLoading(false);
-    }
-  }
+export default async function LoginPage({ searchParams }: PageProps) {
+  const { invite, message } = await searchParams;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -43,7 +30,9 @@ export default function LoginPage() {
           </Link>
           <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
           <p className="text-muted-foreground mt-2">
-            Sign in to your MindMesh account
+            {invite
+              ? "Sign in to join the board"
+              : "Sign in to your MindMesh account"}
           </p>
         </div>
 
@@ -55,69 +44,24 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form action={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  required
-                  disabled={isLoading}
-                />
+            {message && (
+              <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  {message}
+                </p>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
-                    required
-                    disabled={isLoading}
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="text-sm">
-                  <Link href="#" className="text-primary hover:underline">
-                    Forgot password?
-                  </Link>
-                </div>
-              </div>
-
-              {error && (
-                <Alert variant="destructive">
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign in"}
-              </Button>
-            </form>
+            )}
+            <Suspense fallback={<div>Loading...</div>}>
+              <LoginForm inviteToken={invite} />
+            </Suspense>
 
             <div className="mt-6 text-center">
               <p className="text-sm text-muted-foreground">
                 Don&apos;t have an account?{" "}
-                <Link href="/register" className="text-primary hover:underline">
+                <Link
+                  href={invite ? `/register?invite=${invite}` : "/register"}
+                  className="text-primary hover:underline"
+                >
                   Sign up
                 </Link>
               </p>

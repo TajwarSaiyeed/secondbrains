@@ -8,6 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { summarizeContent } from "@/lib/ai";
 import { GridFSBucket } from "mongodb";
 import { Readable } from "stream";
+import { extractContentWithAI } from "@/lib/file-extractor";
 
 export type UploadFilesResult =
   | { success: true; count: number }
@@ -253,11 +254,28 @@ export async function uploadFiles(
       type: string;
       uploadedBy: string;
       uploadedAt: string;
+      extractedContent?: string;
     }> = [];
 
     for (const file of incomingFiles) {
       const buffer = Buffer.from(await file.arrayBuffer());
       const readable = Readable.from(buffer);
+
+      // Extract content from file
+      let extractedContent = "";
+      try {
+        const contentResult = await extractContentWithAI(
+          buffer,
+          file.type,
+          file.name
+        );
+        extractedContent = contentResult.text;
+        console.log(
+          `Extracted content from ${file.name}: ${extractedContent.length} characters`
+        );
+      } catch (error) {
+        console.error(`Failed to extract content from ${file.name}:`, error);
+      }
 
       const uploadStream = bucket.openUploadStream(file.name, {
         contentType: file.type,
@@ -265,6 +283,7 @@ export async function uploadFiles(
           boardId,
           userId: user._id.toString(),
           size: file.size,
+          extractedContent,
         },
       });
 
@@ -283,7 +302,32 @@ export async function uploadFiles(
           type: file.type || "application/octet-stream",
           uploadedBy: user._id.toString(),
           uploadedAt: new Date().toISOString(),
+          extractedContent,
         });
+
+        // If we extracted meaningful content, also save it as a note
+        if (
+          extractedContent &&
+          extractedContent.length > 50 &&
+          !extractedContent.includes("Content extraction not supported")
+        ) {
+          const note = {
+            id: new ObjectId().toString(),
+            content: `📁 **File: ${file.name}**\n\n${extractedContent}`,
+            authorId: user._id.toString(),
+            authorName: user.name,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            sourceFileId: fileId,
+            sourceFileName: file.name,
+          };
+
+          await db
+            .collection("boards")
+            .updateOne({ _id: new ObjectId(boardId) }, {
+              $push: { notes: note },
+            } as any);
+        }
       }
     }
 

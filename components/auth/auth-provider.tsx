@@ -22,26 +22,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [checkAuth]);
 
   useEffect(() => {
-    if (!isLoading && hasCheckedAuth.current) {
-      const isAuthPage = pathname === "/login" || pathname === "/register";
-      const isPublicPage = pathname === "/";
+    if (isLoading || !hasCheckedAuth.current) return;
 
-      console.log("Auth Provider:", {
-        isAuthenticated,
-        pathname,
-        isAuthPage,
-        isPublicPage,
-      });
+    // Only move authenticated users away from auth pages.
+    const isAuthPage = pathname === "/login" || pathname === "/register";
 
-      if (isAuthenticated && isAuthPage) {
-        console.log("Redirecting authenticated user to dashboard");
-        router.replace("/dashboard");
-      } else if (!isAuthenticated && !isAuthPage && !isPublicPage) {
-        console.log("Redirecting unauthenticated user to login");
-        router.replace("/login");
-      }
+    // Treat these as publicly accessible (no client redirect for unauthenticated):
+    const isPublicPage =
+      pathname === "/" ||
+      pathname === "/forgot-password" ||
+      pathname.startsWith("/reset-password") ||
+      pathname.startsWith("/invite");
+
+    if (isAuthenticated && isAuthPage) {
+      router.replace("/dashboard");
+      return;
     }
-  }, [isAuthenticated, isLoading, pathname, router, hasCheckedAuth]);
+
+    if (!isAuthenticated && (isAuthPage || isPublicPage)) {
+      return;
+    }
+  }, [isAuthenticated, isLoading, pathname, router]);
 
   return <>{children}</>;
 }
