@@ -6,11 +6,11 @@ import { SummarizeDialog } from "./summarize-dialog";
 
 interface DiscussionHeaderProps {
   board: {
-    _id: string;
+    id: string;
     title: string;
     members: Array<{
       userId: string;
-      name: string;
+      name: string | null;
       role: string;
     }>;
   };
@@ -22,7 +22,7 @@ export function DiscussionHeader({ board }: DiscussionHeaderProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/dashboard/${board._id}`}>
+            <Link href={`/dashboard/${board.id}`}>
               <ArrowLeft className="h-4 w-4" />
             </Link>
           </Button>
@@ -35,7 +35,7 @@ export function DiscussionHeader({ board }: DiscussionHeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
-          <SummarizeDialog boardId={board._id} />
+          <SummarizeDialog boardId={board.id} />
           <div className="flex items-center gap-2">
             <Users className="h-4 w-4 text-muted-foreground" />
             <span className="text-sm text-muted-foreground">

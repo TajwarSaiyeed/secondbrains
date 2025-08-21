@@ -3,21 +3,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MessageBubble } from "@/components/discussions/message-bubble";
 import { MessageInput } from "@/components/discussions/message-input";
-import { getMessages } from "@/actions/discussions";
+import { getMessages, type DiscussionMessage } from "@/actions/discussions";
 import { Bot } from "lucide-react";
 
 interface Message {
   id: string;
-  content: string;
-  authorId: string;
-  authorName: string;
-  type: "user" | "ai";
-  createdAt: string;
-}
-
-interface MessageResponse {
-  id?: string;
-  _id: string;
   content: string;
   authorId: string;
   authorName: string;
@@ -57,17 +47,15 @@ export function DiscussionMessages({
       if (timeSinceLastFetch < 2000) return;
 
       try {
-        const updatedMessages = await getMessages(boardId);
-        const formattedMessages = updatedMessages.map(
-          (msg: MessageResponse) => ({
-            id: msg.id || msg._id,
-            content: msg.content,
-            authorId: msg.authorId,
-            authorName: msg.authorName,
-            type: msg.type,
-            createdAt: msg.createdAt,
-          })
-        );
+        const updatedMessages: DiscussionMessage[] = await getMessages(boardId);
+        const formattedMessages: Message[] = updatedMessages.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          authorId: msg.authorId,
+          authorName: msg.authorName,
+          type: msg.type,
+          createdAt: msg.createdAt,
+        }));
 
         if (isActive && formattedMessages.length !== messageCount) {
           const hadMessages = messages.length > 0;
@@ -103,17 +91,15 @@ export function DiscussionMessages({
   const handleNewMessage = () => {
     setTimeout(async () => {
       try {
-        const updatedMessages = await getMessages(boardId);
-        const formattedMessages = updatedMessages.map(
-          (msg: MessageResponse) => ({
-            id: msg.id || msg._id,
-            content: msg.content,
-            authorId: msg.authorId,
-            authorName: msg.authorName,
-            type: msg.type,
-            createdAt: msg.createdAt,
-          })
-        );
+        const updatedMessages: DiscussionMessage[] = await getMessages(boardId);
+        const formattedMessages = updatedMessages.map((msg) => ({
+          id: msg.id,
+          content: msg.content,
+          authorId: msg.authorId,
+          authorName: msg.authorName,
+          type: msg.type,
+          createdAt: msg.createdAt,
+        })) as Message[];
         setMessages(formattedMessages);
         setTimeout(scrollToBottom, 100);
       } catch (error) {
@@ -157,7 +143,6 @@ export function DiscussionMessages({
         )}
       </div>
 
-      {/* Message Input */}
       <MessageInput boardId={boardId} onMessageSent={handleNewMessage} />
     </div>
   );

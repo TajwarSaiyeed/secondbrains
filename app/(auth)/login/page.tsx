@@ -8,17 +8,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { LoginForm } from "@/components/auth/login-form";
+import { LoginForm } from "../components/login-form";
 
 interface PageProps {
   searchParams: Promise<{
     invite?: string;
     message?: string;
+    callbackUrl?: string;
   }>;
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
-  const { invite, message } = await searchParams;
+  const { invite, message, callbackUrl } = await searchParams;
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -52,7 +53,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
               </div>
             )}
             <Suspense fallback={<div>Loading...</div>}>
-              <LoginForm inviteToken={invite} />
+              <LoginForm inviteToken={invite} callbackUrl={callbackUrl} />
             </Suspense>
 
             <div className="mt-6 text-center">

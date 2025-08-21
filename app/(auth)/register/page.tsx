@@ -8,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { RegisterForm } from "@/components/auth/register-form";
+import { RegisterForm } from "../components/register-form";
 
 interface PageProps {
   searchParams: Promise<{

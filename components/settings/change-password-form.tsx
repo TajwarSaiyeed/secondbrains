@@ -1,165 +1,103 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { changePassword } from "@/actions/settings";
+import { Save } from "lucide-react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
+const Schema = z
+  .object({
+    currentPassword: z.string().min(1, "Current password is required"),
+    newPassword: z
+      .string()
+      .min(8, "New password must be at least 8 characters"),
+    confirmPassword: z.string().min(1, "Please confirm the new password"),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    path: ["confirmPassword"],
+    message: "Passwords do not match",
+  });
+
+type FormValues = z.infer<typeof Schema>;
 
 export function ChangePasswordForm() {
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const { register, handleSubmit, formState, reset } = useForm<FormValues>({
+    resolver: zodResolver(Schema),
+  });
 
-  async function handleSubmit(formData: FormData) {
-    setIsLoading(true);
-    setError("");
-    setSuccess("");
-
-    const result = await changePassword(formData);
-
-    if (result?.error) {
-      setError(result.error);
+  async function onSubmit(values: FormValues) {
+    const fd = new FormData();
+    fd.set("currentPassword", values.currentPassword);
+    fd.set("newPassword", values.newPassword);
+    fd.set("confirmPassword", values.confirmPassword);
+    const res = await changePassword(fd);
+    if ("error" in res) {
+      toast.error(res.error);
     } else {
-      setSuccess("Password changed successfully!");
-      const form = document.getElementById(
-        "change-password-form"
-      ) as HTMLFormElement;
-      form?.reset();
+      toast.success("Password changed successfully");
+      reset({ currentPassword: "", newPassword: "", confirmPassword: "" });
     }
-
-    setIsLoading(false);
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Lock className="h-5 w-5" />
-          Change Password
-        </CardTitle>
-        <CardDescription>
-          Update your password to keep your account secure
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form
-          id="change-password-form"
-          action={handleSubmit}
-          className="space-y-4"
-        >
-          <div className="space-y-2">
-            <Label htmlFor="currentPassword">Current Password</Label>
-            <div className="relative">
-              <Input
-                id="currentPassword"
-                name="currentPassword"
-                type={showCurrentPassword ? "text" : "password"}
-                placeholder="Enter your current password"
-                required
-                disabled={isLoading}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-              >
-                {showCurrentPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="newPassword">New Password</Label>
-            <div className="relative">
-              <Input
-                id="newPassword"
-                name="newPassword"
-                type={showNewPassword ? "text" : "password"}
-                placeholder="Enter your new password"
-                required
-                disabled={isLoading}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                onClick={() => setShowNewPassword(!showNewPassword)}
-              >
-                {showNewPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="confirmPassword">Confirm New Password</Label>
-            <div className="relative">
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm your new password"
-                required
-                disabled={isLoading}
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                {showConfirmPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-xl">
+      <div className="space-y-2">
+        <Label htmlFor="currentPassword">Current Password</Label>
+        <Input
+          id="currentPassword"
+          type="password"
+          placeholder="Enter current password"
+          disabled={formState.isSubmitting}
+          {...register("currentPassword")}
+        />
+        {formState.errors.currentPassword && (
+          <p className="text-xs text-red-500">
+            {formState.errors.currentPassword.message}
+          </p>
+        )}
+      </div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="newPassword">New Password</Label>
+          <Input
+            id="newPassword"
+            type="password"
+            placeholder="Enter new password"
+            disabled={formState.isSubmitting}
+            {...register("newPassword")}
+          />
+          {formState.errors.newPassword && (
+            <p className="text-xs text-red-500">
+              {formState.errors.newPassword.message}
+            </p>
           )}
-
-          {success && (
-            <Alert className="border-green-200 bg-green-50 text-green-800">
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Confirm New Password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Re-enter new password"
+            disabled={formState.isSubmitting}
+            {...register("confirmPassword")}
+          />
+          {formState.errors.confirmPassword && (
+            <p className="text-xs text-red-500">
+              {formState.errors.confirmPassword.message}
+            </p>
           )}
+        </div>
+      </div>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Changing..." : "Change Password"}
-            </Button>
-          </div>
-        </form>
-      </CardContent>
-    </Card>
+      <Button type="submit" disabled={formState.isSubmitting} className="gap-2">
+        <Save className="h-4 w-4" />
+        {formState.isSubmitting ? "Saving..." : "Save Changes"}
+      </Button>
+    </form>
   );
 }

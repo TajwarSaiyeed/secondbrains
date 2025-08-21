@@ -6,23 +6,8 @@ import { getBoards } from "@/actions/boards";
 import { CreateBoardDialog } from "@/components/boards/create-board-dialog";
 import { Brain } from "lucide-react";
 
-interface Board {
-  _id: string;
-  title: string;
-  description: string;
-  ownerId: string;
-  members: Array<{
-    userId: string;
-    name: string;
-    email: string;
-    role: string;
-    joinedAt: Date;
-  }>;
-  notes: Array<{ id: string; [key: string]: unknown }>;
-  links: Array<{ id: string; [key: string]: unknown }>;
-  files: Array<{ id: string; [key: string]: unknown }>;
-  updatedAt: string;
-}
+import type { BoardSummaryDTO } from "@/actions/boards";
+type Board = BoardSummaryDTO;
 
 interface BoardsGridProps {
   initialBoards: Board[];
@@ -46,7 +31,7 @@ export function BoardsGrid({ initialBoards, currentUserId }: BoardsGridProps) {
       if (timeSinceLastFetch < 10000) return;
 
       try {
-        const updatedBoards = await getBoards();
+        const updatedBoards: Board[] = await getBoards();
 
         if (isActive && updatedBoards.length !== boardCount) {
           setBoards(updatedBoards);
@@ -87,11 +72,7 @@ export function BoardsGrid({ initialBoards, currentUserId }: BoardsGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {boards.map((board) => (
-        <BoardCard
-          key={board._id}
-          board={board}
-          currentUserId={currentUserId}
-        />
+        <BoardCard key={board.id} board={board} currentUserId={currentUserId} />
       ))}
     </div>
   );

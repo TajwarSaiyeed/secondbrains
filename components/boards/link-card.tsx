@@ -1,39 +1,44 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { ExternalLink, MoreHorizontal, Trash2 } from "lucide-react"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { formatDistanceToNow } from "date-fns"
-import { deleteLink } from "@/actions/board-content"
+import { useState } from "react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ExternalLink, MoreHorizontal, Trash2 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { formatDistanceToNow } from "date-fns";
+import { deleteLink } from "@/actions/board-content";
 
 interface LinkCardProps {
   link: {
-    id: string
-    url: string
-    title: string
-    description: string
-    authorId: string
-    authorName: string
-    createdAt: string
-    updatedAt: string
-  }
-  boardId: string
-  currentUserId: string
+    id: string;
+    url: string;
+    title: string;
+    description: string;
+    authorId: string;
+    authorName: string;
+    createdAt: string;
+    updatedAt: string;
+  };
+  boardId: string;
+  currentUserId: string;
 }
 
 export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
-  const [isDeleting, setIsDeleting] = useState(false)
-  const canDelete = link.authorId === currentUserId
+  const [isDeleting, setIsDeleting] = useState(false);
+  const canDelete = link.authorId === currentUserId;
 
   async function handleDelete() {
-    if (!canDelete) return
+    if (!canDelete) return;
 
-    setIsDeleting(true)
-    await deleteLink(boardId, link.id)
-    setIsDeleting(false)
+    setIsDeleting(true);
+    await deleteLink(boardId, link.id);
+    setIsDeleting(false);
   }
 
   return (
@@ -53,7 +58,9 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
             <div>
               <p className="text-sm font-medium">{link.authorName}</p>
               <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(link.createdAt), { addSuffix: true })}
+                {formatDistanceToNow(new Date(link.createdAt), {
+                  addSuffix: true,
+                })}
               </p>
             </div>
           </div>
@@ -65,7 +72,11 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleDelete} disabled={isDeleting} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="text-destructive"
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   {isDeleting ? "Deleting..." : "Delete"}
                 </DropdownMenuItem>
@@ -85,10 +96,12 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
             {link.title}
             <ExternalLink className="h-3 w-3" />
           </a>
-          {link.description && <p className="text-sm text-muted-foreground">{link.description}</p>}
+          {link.description && (
+            <p className="text-sm text-muted-foreground">{link.description}</p>
+          )}
           <p className="text-xs text-muted-foreground break-all">{link.url}</p>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

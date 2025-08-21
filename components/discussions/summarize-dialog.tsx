@@ -14,7 +14,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Sparkles, Calendar, MessageSquare, Loader2 } from "lucide-react";
-import { summarizeDiscussion } from "@/actions/summarize";
+import { summarizeDiscussion, type ActionResult } from "@/actions/discussions";
 
 interface SummarizeDialogProps {
   boardId: string;
@@ -33,11 +33,7 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
 
     setLoading(true);
 
-    const options: {
-      days?: number;
-      startDate?: string;
-      endDate?: string;
-    } = {};
+    const options: { days?: number; startDate?: string; endDate?: string } = {};
 
     if (summaryType === "days" && days) {
       options.days = parseInt(days.toString());
@@ -47,8 +43,8 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
     }
 
     try {
-      const result = await summarizeDiscussion(boardId, options);
-      if (result.error) {
+      const result: ActionResult = await summarizeDiscussion(boardId, options);
+      if ("error" in result) {
         console.error(result.error);
       } else {
         setOpen(false);
@@ -84,7 +80,6 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Summary Type Selection */}
           <div className="space-y-3">
             <Label>Summary timeframe</Label>
             <div className="flex gap-2">
@@ -107,7 +102,6 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
             </div>
           </div>
 
-          {/* Days Input */}
           {summaryType === "days" && (
             <div className="space-y-2">
               <Label htmlFor="days">Number of days</Label>
@@ -127,7 +121,6 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
             </div>
           )}
 
-          {/* Date Range Inputs */}
           {summaryType === "dateRange" && (
             <div className="space-y-3">
               <div className="space-y-2">

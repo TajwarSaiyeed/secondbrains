@@ -1,49 +1,53 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, X } from "lucide-react"
-import { addNote } from "@/actions/board-content"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, X } from "lucide-react";
+import { addNote, type ActionResult } from "@/actions/board-content";
 
 interface AddNoteFormProps {
-  boardId: string
+  boardId: string;
 }
 
 export function AddNoteForm({ boardId }: AddNoteFormProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [content, setContent] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
+  const [content, setContent] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-    const result = await addNote(boardId, content)
+    const result: ActionResult = await addNote(boardId, content);
 
-    if (result.error) {
-      setError(result.error)
-      setIsLoading(false)
+    if ("error" in result) {
+      setError(result.error);
+      setIsLoading(false);
     } else {
-      setContent("")
-      setIsOpen(false)
-      setIsLoading(false)
+      setContent("");
+      setIsOpen(false);
+      setIsLoading(false);
     }
   }
 
   if (!isOpen) {
     return (
-      <Button onClick={() => setIsOpen(true)} variant="outline" className="w-full gap-2">
+      <Button
+        onClick={() => setIsOpen(true)}
+        variant="outline"
+        className="w-full gap-2"
+      >
         <Plus className="h-4 w-4" />
         Add Note
       </Button>
-    )
+    );
   }
 
   return (
@@ -71,7 +75,12 @@ export function AddNoteForm({ boardId }: AddNoteFormProps) {
             </Alert>
           )}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading || !content.trim()}>
@@ -81,5 +90,5 @@ export function AddNoteForm({ boardId }: AddNoteFormProps) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

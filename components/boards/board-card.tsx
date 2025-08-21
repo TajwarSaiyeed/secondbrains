@@ -13,13 +13,13 @@ import { formatDistanceToNow } from "date-fns";
 
 interface BoardCardProps {
   board: {
-    _id: string;
+    id: string;
     title: string;
-    description: string;
+    description: string | null;
     members: Array<{
       userId: string;
-      name: string;
-      email: string;
+      name: string | null;
+      email: string | null;
       role: string;
     }>;
     notes: Array<{ id: string }>;
@@ -38,7 +38,7 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
     board.notes.length + board.links.length + board.files.length;
 
   return (
-    <Link href={`/dashboard/${board._id}`}>
+    <Link href={`/dashboard/${board.id}`}>
       <Card className="h-full hover:shadow-md transition-shadow cursor-pointer border-border">
         <CardHeader>
           <div className="flex items-start justify-between">
@@ -46,9 +46,11 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
               <CardTitle className="text-lg line-clamp-2">
                 {board.title}
               </CardTitle>
-              <CardDescription className="mt-2 line-clamp-3">
-                {board.description}
-              </CardDescription>
+              {board.description && (
+                <CardDescription className="mt-2 line-clamp-3">
+                  {board.description}
+                </CardDescription>
+              )}
             </div>
             {isOwner && (
               <Badge variant="secondary" className="ml-2">
@@ -59,7 +61,6 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {/* Members */}
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
@@ -72,7 +73,7 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
                     className="h-6 w-6 border-2 border-background"
                   >
                     <AvatarFallback className="text-xs">
-                      {member.name
+                      {(member.name || member.email || "?")
                         .split(" ")
                         .map((n) => n[0])
                         .join("")
@@ -90,7 +91,6 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
               </div>
             </div>
 
-            {/* Content count */}
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
@@ -98,7 +98,6 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
               </span>
             </div>
 
-            {/* Last updated */}
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">

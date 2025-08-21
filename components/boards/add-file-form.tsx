@@ -50,7 +50,16 @@ export function AddFileForm({ boardId }: { boardId: string }) {
   const getFileIcon = (file: File) => {
     if (file.type.startsWith("image/"))
       return <ImageIcon className="h-4 w-4" />;
-    if (file.type.includes("pdf") || file.type.includes("document"))
+    const name = file.name.toLowerCase();
+    if (file.type.includes("pdf") || name.endsWith(".pdf"))
+      return <FileText className="h-4 w-4" />;
+    if (
+      name.endsWith(".doc") ||
+      name.endsWith(".docx") ||
+      name.endsWith(".txt")
+    )
+      return <FileText className="h-4 w-4" />;
+    if (name.endsWith(".csv") || name.endsWith(".xlsx"))
       return <FileText className="h-4 w-4" />;
     return <File className="h-4 w-4" />;
   };
@@ -116,7 +125,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
               multiple
               className="hidden"
               onChange={handleFileSelect}
-              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3"
+              accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.mp4,.mp3,.csv,.xlsx"
             />
           </form>
         </div>

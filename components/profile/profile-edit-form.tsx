@@ -1,55 +1,69 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { User, Mail, Save } from "lucide-react"
-import { updateProfile } from "@/actions/profile"
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { User, Mail, Save } from "lucide-react";
+import { updateProfile } from "@/actions/profile";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
 interface ProfileEditFormProps {
   user: {
-    _id: string
-    name: string
-    email: string
-    createdAt: string
-    updatedAt: string
-  }
+    _id: string;
+    name: string;
+    email: string;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
+const Schema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters"),
+  email: z.string().trim().email("Please enter a valid email"),
+});
+
+type FormValues = z.infer<typeof Schema>;
+
 export function ProfileEditForm({ user }: ProfileEditFormProps) {
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const { register, handleSubmit, formState, reset } = useForm<FormValues>({
+    resolver: zodResolver(Schema),
+    defaultValues: { name: user.name, email: user.email },
+  });
 
-  async function handleSubmit(formData: FormData) {
-    setIsLoading(true)
-    setError("")
-    setSuccess("")
-
-    const result = await updateProfile(formData)
-
-    if (result?.error) {
-      setError(result.error)
+  async function onSubmit(values: FormValues) {
+    const fd = new FormData();
+    fd.set("name", values.name);
+    fd.set("email", values.email);
+    const result = await updateProfile(fd);
+    if ("error" in result && result.error) {
+      toast.error(result.error);
     } else {
-      setSuccess("Profile updated successfully!")
+      toast.success("Profile updated successfully");
+      reset(values);
     }
-
-    setIsLoading(false)
   }
 
   return (
     <Card>
       <CardHeader>
         <CardTitle>Personal Information</CardTitle>
-        <CardDescription>Update your account details and personal information</CardDescription>
+        <CardDescription>
+          Update your account details and personal information
+        </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={handleSubmit} className="space-y-6">
-          {/* Profile Picture */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="flex items-center gap-4">
             <Avatar className="h-16 w-16">
               <AvatarFallback className="text-lg">
@@ -62,11 +76,12 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
             </Avatar>
             <div>
               <p className="text-sm font-medium">Profile Picture</p>
-              <p className="text-xs text-muted-foreground">Avatar is generated from your initials</p>
+              <p className="text-xs text-muted-foreground">
+                Avatar is generated from your initials
+              </p>
             </div>
           </div>
 
-          {/* Form Fields */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
@@ -74,70 +89,71 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
-                  name="name"
                   type="text"
-                  defaultValue={user.name}
                   placeholder="Enter your full name"
                   className="pl-10"
-                  required
-                  disabled={isLoading}
+                  disabled={formState.isSubmitting}
+                  {...register("name")}
                 />
               </div>
+              {formState.errors.name && (
+                <p className="text-xs text-red-500">
+                  {formState.errors.name.message}
+                </p>
+              )}
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="email"
-                  name="email"
                   type="email"
-                  defaultValue={user.email}
                   placeholder="Enter your email"
                   className="pl-10"
-                  required
-                  disabled={isLoading}
+                  disabled={formState.isSubmitting}
+                  {...register("email")}
                 />
               </div>
+              {formState.errors.email && (
+                <p className="text-xs text-red-500">
+                  {formState.errors.email.message}
+                </p>
+              )}
             </div>
           </div>
 
-          {/* Account Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label>Account Created</Label>
-              <Input value={new Date(user.createdAt).toLocaleDateString()} disabled className="bg-muted" />
+              <Input
+                value={new Date(user.createdAt).toLocaleDateString()}
+                disabled
+                className="bg-muted"
+              />
             </div>
-
             <div className="space-y-2">
               <Label>Last Updated</Label>
-              <Input value={new Date(user.updatedAt).toLocaleDateString()} disabled className="bg-muted" />
+              <Input
+                value={new Date(user.updatedAt).toLocaleDateString()}
+                disabled
+                className="bg-muted"
+              />
             </div>
           </div>
 
-          {/* Messages */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {success && (
-            <Alert className="border-green-200 bg-green-50 text-green-800">
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* Submit Button */}
           <div className="flex justify-end">
-            <Button type="submit" disabled={isLoading} className="gap-2">
+            <Button
+              type="submit"
+              disabled={formState.isSubmitting}
+              className="gap-2"
+            >
               <Save className="h-4 w-4" />
-              {isLoading ? "Saving..." : "Save Changes"}
+              {formState.isSubmitting ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

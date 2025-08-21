@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+
+  // Custom fields
+  password     String?
+  resetToken   String?
+  resetExpires DateTime?
+  settings     UserSettings?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts      Account[]
+  sessions      Session[]
+  notifications Notification[]
+  boardsOwned   Board[]        @relation("BoardsOwned")
+
+  @@map("users")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+  oauth_token_secret String?
+  oauth_token        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String?
+  token      String   @unique
+  expires    DateTime
+
+  @@index([identifier])
+  @@map("verification_tokens")
+}
+
+model Board {
+  id             String          @id @default(cuid())
+  title          String
+  description    String
+  ownerId        String
+  owner          User            @relation("BoardsOwned", fields: [ownerId], references: [id], onDelete: Cascade)
+  members        BoardMember[]
+  notes          Note[]
+  links          Link[]
+  files          FileMeta[]
+  aiSummaries    AISummary[]
+  inviteToken    String?
+  pendingInvites PendingInvite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  messages Message[]
+
+  @@index([ownerId])
+  @@index([inviteToken])
+  @@index([updatedAt])
+  @@map("boards")
+}
+
+model Message {
+  id         String      @id @default(cuid())
+  boardId    String
+  board      Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  content    String
+  authorId   String
+  authorName String
+  type       MessageType
+  createdAt  DateTime    @default(now())
+
+  @@index([boardId])
+  @@map("messages")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  message   String
+  data      Json?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notifications")
+}
+
+enum BoardRole {
+  owner
+  member
+}
+
+enum MessageType {
+  user
+  ai
+}
+
+enum NotificationType {
+  board_invite
+  board_joined
+  message_mention
+}
+
+model UserSettings {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNotifications Boolean @default(true)
+  aiSuggestions      Boolean @default(true)
+
+  @@map("user_settings")
+}
+
+model BoardMember {
+  id       String    @id @default(cuid())
+  boardId  String
+  board    Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  userId   String
+  name     String
+  email    String
+  role     BoardRole
+  joinedAt DateTime  @default(now())
+
+  @@index([boardId])
+  @@index([userId])
+  @@map("board_members")
+}
+
+model Note {
+  id             String   @id @default(cuid())
+  boardId        String
+  board          Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  content        String
+  authorId       String
+  authorName     String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  sourceFileId   String?
+  sourceFileName String?
+
+  @@index([boardId])
+  @@index([authorId])
+  @@map("notes")
+}
+
+model Link {
+  id          String   @id @default(cuid())
+  boardId     String
+  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  url         String
+  title       String
+  description String
+  authorId    String
+  authorName  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([boardId])
+  @@index([authorId])
+  @@map("links")
+}
+
+model FileMeta {
+  id               String   @id @default(cuid())
+  boardId          String
+  board            Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name             String
+  size             Int
+  type             String
+  uploadedBy       String
+  uploadedAt       DateTime @default(now())
+  extractedContent String?
+
+  @@index([boardId])
+  @@index([uploadedBy])
+  @@map("file_metas")
+}
+
+model AISummary {
+  id          String   @id @default(cuid())
+  boardId     String
+  board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  content     String
+  generatedAt DateTime @default(now())
+  generatedBy String
+
+  @@index([boardId])
+  @@map("ai_summaries")
+}
+
+model PendingInvite {
+  id        String   @id @default(cuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  email     String
+  invitedBy String
+  invitedAt DateTime @default(now())
+  message   String?
+
+  @@index([boardId])
+  @@index([email])
+  @@map("pending_invites")
+}

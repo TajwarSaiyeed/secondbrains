@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -9,31 +9,31 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus } from "lucide-react"
-import { createBoard } from "@/actions/boards"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus } from "lucide-react";
+import { createBoard } from "@/actions/boards";
 
 export function CreateBoardDialog() {
-  const [open, setOpen] = useState(false)
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [open, setOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(formData: FormData) {
-    setIsLoading(true)
-    setError("")
+    setIsLoading(true);
+    setError("");
 
-    const result = await createBoard(formData)
+    const result = await createBoard(formData);
 
-    if (result?.error) {
-      setError(result.error)
-      setIsLoading(false)
+    if (result && typeof result === "object" && "error" in result) {
+      setError(result.error as string);
+      setIsLoading(false);
     } else {
-      setOpen(false)
-      setIsLoading(false)
+      setOpen(false);
+      setIsLoading(false);
     }
   }
 
@@ -49,7 +49,8 @@ export function CreateBoardDialog() {
         <DialogHeader>
           <DialogTitle>Create New Study Board</DialogTitle>
           <DialogDescription>
-            Create a new collaborative study board to organize your research and notes.
+            Create a new collaborative study board to organize your research and
+            notes.
           </DialogDescription>
         </DialogHeader>
         <form action={handleSubmit} className="space-y-4">
@@ -80,7 +81,12 @@ export function CreateBoardDialog() {
             </Alert>
           )}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
             <Button type="submit" disabled={isLoading}>
@@ -90,5 +96,5 @@ export function CreateBoardDialog() {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

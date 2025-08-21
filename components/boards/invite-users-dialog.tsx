@@ -17,19 +17,21 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, X, Mail, Copy, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-
-interface InviteUsersDialogProps {
-  boardTitle: string;
-  boardId: string;
-}
 import { inviteUsers, generateInvite } from "@/actions/boards";
+import { toast } from "sonner";
+
 type InviteLinkResult = { link: string } | { error: string };
+
 type InviteUsersResult = { success: boolean } | { error: string };
 
 export function InviteUsersDialog({
-  boardTitle,
   boardId,
-}: InviteUsersDialogProps) {
+  boardTitle,
+}: {
+  boardId: string;
+  boardTitle?: string;
+}) {
+  const [open, setOpen] = useState(false);
   const [emails, setEmails] = useState<string[]>([]);
   const [currentEmail, setCurrentEmail] = useState("");
   const [message, setMessage] = useState("");
@@ -68,15 +70,20 @@ export function InviteUsersDialog({
     const res: InviteLinkResult = await generateInvite(boardId);
     if ("link" in res) setInviteLink(res.link);
   };
+
   const handleSend = async () => {
     if (emails.length === 0) return;
     setIsSending(true);
     setError("");
     const res: InviteUsersResult = await inviteUsers(boardId, emails, message);
-    if ("error" in res) setError(res.error);
-    if ("success" in res) {
+    if ("error" in res) {
+      setError(res.error);
+      toast.error(res.error);
+    } else {
       setEmails([]);
       setMessage("");
+      toast.success("Invitations sent");
+      setOpen(false);
     }
     setIsSending(false);
   };
@@ -90,7 +97,7 @@ export function InviteUsersDialog({
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="gap-2 bg-transparent">
           <UserPlus className="h-4 w-4" />
@@ -101,14 +108,14 @@ export function InviteUsersDialog({
         <DialogHeader>
           <DialogTitle>Invite Users to Board</DialogTitle>
           <DialogDescription>
-            Invite collaborators to join &quot;{boardTitle}&quot; and start
-            working together.
+            Invite collaborators to join{" "}
+            {boardTitle ? `"${boardTitle}"` : "this board"} and start working
+            together.
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {error && <p className="text-sm text-red-600">{error}</p>}
-          {/* Email Invites Section */}
           <div className="space-y-2">
             <Label htmlFor="email">Invite by Email</Label>
             <div className="flex gap-2">
@@ -134,7 +141,6 @@ export function InviteUsersDialog({
             </p>
           </div>
 
-          {/* Email Tags */}
           {emails.length > 0 && (
             <div className="space-y-2">
               <Label>Invited Users ({emails.length})</Label>
@@ -157,7 +163,6 @@ export function InviteUsersDialog({
             </div>
           )}
 
-          {/* Custom Message */}
           <div className="space-y-2">
             <Label htmlFor="message">Custom Message (Optional)</Label>
             <Textarea
@@ -169,7 +174,6 @@ export function InviteUsersDialog({
             />
           </div>
 
-          {/* Invite Link Section */}
           <div className="space-y-2 pt-4 border-t">
             <Label>Or Share Invite Link</Label>
             {!inviteLink ? (
@@ -206,7 +210,6 @@ export function InviteUsersDialog({
             )}
           </div>
 
-          {/* Action Buttons */}
           <div className="flex gap-2 pt-4">
             <Button
               onClick={handleSend}

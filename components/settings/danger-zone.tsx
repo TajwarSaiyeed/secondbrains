@@ -1,156 +1,86 @@
 "use client";
 
-import type React from "react";
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { AlertTriangle, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { deleteAccount } from "@/actions/settings";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
+
+const Schema = z.object({
+  password: z.string().min(1, "Password is required"),
+  confirmation: z
+    .string()
+    .refine((v) => v === "DELETE", {
+      message: "Please type DELETE to confirm",
+    }),
+});
+
+type FormValues = z.infer<typeof Schema>;
 
 export function DangerZone() {
-  const [open, setOpen] = useState(false);
-  const [password, setPassword] = useState("");
-  const [confirmation, setConfirmation] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+  const { register, handleSubmit, formState, reset } = useForm<FormValues>({
+    resolver: zodResolver(Schema),
+  });
 
-  async function handleDeleteAccount(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    const formData = new FormData();
-    formData.append("password", password);
-    formData.append("confirmation", confirmation);
-
-    const result = await deleteAccount(formData);
-
-    if (result?.error) {
-      setError(result.error);
-      setIsLoading(false);
+  async function onSubmit(values: FormValues) {
+    const fd = new FormData();
+    fd.set("password", values.password);
+    fd.set("confirmation", values.confirmation);
+    const res = await deleteAccount(fd);
+    if ("error" in res) {
+      toast.error(res.error);
+    } else {
+      toast.success("Account deleted. Redirecting...");
+      reset();
+      setTimeout(() => router.push("/"), 800);
     }
   }
 
   return (
-    <Card className="border-destructive/50">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-destructive">
-          <AlertTriangle className="h-5 w-5" />
-          Danger Zone
-        </CardTitle>
-        <CardDescription>
-          Irreversible and destructive actions. Please proceed with caution.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          <div className="p-4 border border-destructive/20 rounded-lg bg-destructive/5">
-            <h4 className="font-medium text-destructive mb-2">
-              Delete Account
-            </h4>
-            <p className="text-sm text-muted-foreground mb-4">
-              Once you delete your account, there is no going back. This will
-              permanently delete your account, all your boards, and remove you
-              from shared boards.
-            </p>
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-xl">
+      <div className="space-y-2">
+        <Label htmlFor="password">Confirm with Password</Label>
+        <Input
+          id="password"
+          type="password"
+          placeholder="Enter your password"
+          disabled={formState.isSubmitting}
+          {...register("password")}
+        />
+        {formState.errors.password && (
+          <p className="text-xs text-red-500">
+            {formState.errors.password.message}
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="confirmation">Type DELETE to confirm</Label>
+        <Input
+          id="confirmation"
+          type="text"
+          placeholder="DELETE"
+          disabled={formState.isSubmitting}
+          {...register("confirmation")}
+        />
+        {formState.errors.confirmation && (
+          <p className="text-xs text-red-500">
+            {formState.errors.confirmation.message}
+          </p>
+        )}
+      </div>
 
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button variant="destructive" className="gap-2">
-                  <Trash2 className="h-4 w-4" />
-                  Delete Account
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                  <DialogTitle className="text-destructive">
-                    Delete Account
-                  </DialogTitle>
-                  <DialogDescription>
-                    This action cannot be undone. This will permanently delete
-                    your account and all associated data.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <form onSubmit={handleDeleteAccount} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="deletePassword">
-                      Confirm your password
-                    </Label>
-                    <Input
-                      id="deletePassword"
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="deleteConfirmation">
-                      Type <strong>DELETE</strong> to confirm
-                    </Label>
-                    <Input
-                      id="deleteConfirmation"
-                      placeholder="DELETE"
-                      value={confirmation}
-                      onChange={(e) => setConfirmation(e.target.value)}
-                      required
-                      disabled={isLoading}
-                    />
-                  </div>
-
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setOpen(false)}
-                      disabled={isLoading}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      variant="destructive"
-                      disabled={
-                        isLoading || !password || confirmation !== "DELETE"
-                      }
-                    >
-                      {isLoading ? "Deleting..." : "Delete Account"}
-                    </Button>
-                  </div>
-                </form>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <Button
+        type="submit"
+        variant="destructive"
+        disabled={formState.isSubmitting}
+      >
+        {formState.isSubmitting ? "Deleting..." : "Delete Account"}
+      </Button>
+    </form>
   );
 }

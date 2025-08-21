@@ -15,13 +15,14 @@ import {
 import {
   markNotificationAsRead,
   acceptBoardInvite,
-  type Notification,
+  type NotificationDTO,
 } from "@/actions/notifications";
+type ActionResult = { success: true; boardId: string } | { error: string };
 import { useRouter } from "next/navigation";
 
 interface NotificationListProps {
-  notifications: Notification[];
-  onNotificationUpdate?: (notifications: Notification[]) => void;
+  notifications: NotificationDTO[];
+  onNotificationUpdate?: (notifications: NotificationDTO[]) => void;
 }
 
 export function NotificationList({
@@ -46,22 +47,17 @@ export function NotificationList({
 
   const handleMarkAsRead = async (notificationId: string) => {
     if (processingIds.has(notificationId)) return;
-
     setProcessingIds((prev) => new Set(prev).add(notificationId));
-
     try {
       await markNotificationAsRead(notificationId);
-
       if (onNotificationUpdate) {
-        const updatedNotifications = notifications.map((n) =>
-          n._id === notificationId ? { ...n, read: true } : n
+        const updated = notifications.map((n) =>
+          n.id === notificationId ? { ...n, read: true } : n
         );
-        onNotificationUpdate(updatedNotifications);
+        onNotificationUpdate(updated);
       } else {
         router.refresh();
       }
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
     } finally {
       setProcessingIds((prev) => {
         const next = new Set(prev);
@@ -73,20 +69,14 @@ export function NotificationList({
 
   const handleAcceptInvite = async (notificationId: string) => {
     if (processingIds.has(notificationId)) return;
-
     setProcessingIds((prev) => new Set(prev).add(notificationId));
-
     try {
-      const result = await acceptBoardInvite(notificationId);
-
-      if (result.error) {
+      const result: ActionResult = await acceptBoardInvite(notificationId);
+      if ("error" in result) {
         alert(result.error);
-      } else if (result.success) {
+      } else if (result.success && result.boardId) {
         router.push(`/dashboard/${result.boardId}`);
       }
-    } catch (error) {
-      console.error("Error accepting invite:", error);
-      alert("Failed to accept invitation");
     } finally {
       setProcessingIds((prev) => {
         const next = new Set(prev);
@@ -97,19 +87,16 @@ export function NotificationList({
   };
 
   const handleViewBoard = (boardId?: string) => {
-    if (boardId) {
-      router.push(`/dashboard/${boardId}`);
-    }
+    if (boardId) router.push(`/dashboard/${boardId}`);
   };
 
   return (
     <div className="space-y-4">
       {notifications.map((notification) => {
-        const isProcessing = processingIds.has(notification._id);
-
+        const isProcessing = processingIds.has(notification.id);
         return (
           <div
-            key={notification._id}
+            key={notification.id}
             className={`p-4 border rounded-lg transition-colors ${
               notification.read
                 ? "bg-background border-border"
@@ -117,12 +104,9 @@ export function NotificationList({
             }`}
           >
             <div className="flex items-start gap-3">
-              {/* Icon */}
               <div className="mt-0.5">
                 {getNotificationIcon(notification.type)}
               </div>
-
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
@@ -143,24 +127,18 @@ export function NotificationList({
                       })}
                     </p>
                   </div>
-
-                  {/* Actions */}
                   <div className="flex items-center gap-2">
                     {notification.type === "board_invite" && (
-                      <>
-                        <Button
-                          size="sm"
-                          onClick={() => handleAcceptInvite(notification._id)}
-                          disabled={isProcessing}
-                          className="text-xs"
-                        >
-                          <Check className="h-3 w-3 mr-1" />
-                          Accept
-                        </Button>
-                      </>
+                      <Button
+                        size="sm"
+                        onClick={() => handleAcceptInvite(notification.id)}
+                        disabled={isProcessing}
+                        className="text-xs"
+                      >
+                        Accept
+                      </Button>
                     )}
-
-                    {notification.data?.boardId &&
+                    {typeof notification.data?.boardId === "string" &&
                       notification.type !== "board_invite" && (
                         <Button
                           variant="outline"
@@ -174,12 +152,11 @@ export function NotificationList({
                           View Board
                         </Button>
                       )}
-
                     {!notification.read && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleMarkAsRead(notification._id)}
+                        onClick={() => handleMarkAsRead(notification.id)}
                         disabled={isProcessing}
                         className="text-xs"
                       >

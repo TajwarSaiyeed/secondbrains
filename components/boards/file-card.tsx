@@ -12,9 +12,10 @@ import {
   Video,
   Music,
 } from "lucide-react";
-import { downloadFile } from "@/actions/board-content";
+import { downloadFile, deleteFile } from "@/actions/board-content";
 
 interface FileCardProps {
+  boardId: string;
   file: {
     id: string;
     name: string;
@@ -26,22 +27,21 @@ interface FileCardProps {
   canDelete?: boolean;
 }
 
-export function FileCard({ file, canDelete = false }: FileCardProps) {
+export function FileCard({ boardId, file, canDelete = false }: FileCardProps) {
   async function handleDownload() {
     const res = await downloadFile(file.id);
     if ("error" in res) return;
-    const byteCharacters = atob(res.base64);
+    const { base64, contentType, filename } = res;
+    const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i);
     }
-    const blob = new Blob([new Uint8Array(byteNumbers)], {
-      type: res.contentType,
-    });
+    const blob = new Blob([new Uint8Array(byteNumbers)], { type: contentType });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = res.filename;
+    a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -58,6 +58,13 @@ export function FileCard({ file, canDelete = false }: FileCardProps) {
       return <Music className="h-5 w-5 text-green-500" />;
     return <File className="h-5 w-5 text-gray-500" />;
   };
+
+  async function handleDelete() {
+    if (!canDelete) return;
+    const ok = confirm(`Delete file "${file.name}"?`);
+    if (!ok) return;
+    await deleteFile(boardId, file.id);
+  }
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return "0 Bytes";
@@ -117,6 +124,7 @@ export function FileCard({ file, canDelete = false }: FileCardProps) {
                 size="sm"
                 className="h-8 w-8 p-0 text-gray-400 hover:text-red-500"
                 title="Delete file"
+                onClick={handleDelete}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

@@ -1,60 +1,56 @@
 "use server";
 
 import "server-only";
-import { ObjectId } from "mongodb";
-import { revalidatePath } from "next/cache";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { summarizeContent } from "@/lib/ai";
-import { GridFSBucket } from "mongodb";
-import { Readable } from "stream";
-import { extractContentWithAI } from "@/lib/file-extractor";
+import { revalidatePath } from "next/cache";
+import fs from "fs";
+import path from "path";
+// Dynamic imports for heavy libraries to avoid build issues
 
-export type UploadFilesResult =
-  | { success: true; count: number }
-  | { error: string };
+export type ActionResult = { success: true } | { error: string };
 
-export async function addNote(boardId: string, content: string) {
+export async function addNote(
+  boardId: string,
+  content: string
+): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  if (!user) return { error: "Not authenticated" };
+  if (!content.trim()) return { error: "Note content is required" };
 
-  if (!content.trim()) {
-    return { error: "Note content is required" };
-  }
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+  });
+  if (!board) return { error: "Board not found or access denied" };
 
-  try {
-    const db = await getDb();
-    const note = {
-      id: new ObjectId().toString(),
-      content: content.trim(),
-      authorId: user._id.toString(),
-      authorName: user.name,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  await prisma.note.create({
+    data: {
+      boardId,
+      content,
+      authorId: user.id,
+      authorName: user.name || user.email || "User",
+    },
+  });
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true };
+}
 
-    await db.collection("boards").updateOne(
-      {
-        _id: new ObjectId(boardId),
-        $or: [
-          { ownerId: new ObjectId(user._id) },
-          { "members.userId": new ObjectId(user._id) },
-        ],
-      },
-      {
-        $push: { notes: note },
-        $set: { updatedAt: new Date() },
-      } as any
-    );
+export async function deleteNote(
+  boardId: string,
+  noteId: string
+): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
 
-    revalidatePath(`/dashboard/${boardId}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error adding note:", error);
-    return { error: "Failed to add note" };
-  }
+  const res = await prisma.note.deleteMany({
+    where: { id: noteId, boardId, authorId: user.id },
+  });
+  if (res.count === 0) return { error: "Note not found or permission denied" };
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true };
 }
 
 export async function addLink(
@@ -62,336 +58,376 @@ export async function addLink(
   url: string,
   title: string,
   description: string
-) {
+): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  if (!url.trim() || !title.trim()) {
+  if (!user) return { error: "Not authenticated" };
+  if (!url.trim() || !title.trim())
     return { error: "URL and title are required" };
-  }
 
-  try {
-    const db = await getDb();
-    const link = {
-      id: new ObjectId().toString(),
-      url: url.trim(),
-      title: title.trim(),
-      description: description.trim(),
-      authorId: user._id.toString(),
-      authorName: user.name,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+  });
+  if (!board) return { error: "Board not found or access denied" };
 
-    await db.collection("boards").updateOne(
-      {
-        _id: new ObjectId(boardId),
-        $or: [
-          { ownerId: new ObjectId(user._id) },
-          { "members.userId": new ObjectId(user._id) },
-        ],
-      },
-      {
-        $push: { links: link },
-        $set: { updatedAt: new Date() },
-      } as any
-    );
-
-    revalidatePath(`/dashboard/${boardId}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error adding link:", error);
-    return { error: "Failed to add link" };
-  }
+  await prisma.link.create({
+    data: {
+      boardId,
+      url,
+      title,
+      description: description || "",
+      authorId: user.id,
+      authorName: user.name || user.email || "User",
+    },
+  });
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true };
 }
 
-export async function generateAISummary(boardId: string) {
+export async function deleteLink(
+  boardId: string,
+  linkId: string
+): Promise<ActionResult> {
   const user = await getCurrentUser();
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
+  if (!user) return { error: "Not authenticated" };
 
-  try {
-    const db = await getDb();
-    const board = await db.collection("boards").findOne({
-      _id: new ObjectId(boardId),
-      $or: [
-        { ownerId: new ObjectId(user._id) },
-        { "members.userId": new ObjectId(user._id) },
-      ],
-    });
-
-    if (!board) {
-      return { error: "Board not found" };
-    }
-
-    const allContent = [
-      ...board.notes.map((note: any) => `Note: ${note.content}`),
-      ...board.links.map(
-        (link: any) => `Link: ${link.title} - ${link.description}`
-      ),
-    ].join("\n\n");
-
-    if (!allContent.trim()) {
-      return { error: "No content to summarize" };
-    }
-
-    const summary = await summarizeContent(allContent);
-
-    const aiSummary = {
-      id: new ObjectId().toString(),
-      content: summary,
-      generatedAt: new Date(),
-      generatedBy: user._id.toString(),
-    };
-
-    await db.collection("boards").updateOne({ _id: new ObjectId(boardId) }, {
-      $set: {
-        aiSummary,
-        updatedAt: new Date(),
-      },
-    } as any);
-
-    revalidatePath(`/dashboard/${boardId}`);
-    return { success: true, summary };
-  } catch (error) {
-    console.error("Error generating AI summary:", error);
-    return { error: "Failed to generate AI summary" };
-  }
+  const res = await prisma.link.deleteMany({
+    where: { id: linkId, boardId, authorId: user.id },
+  });
+  if (res.count === 0) return { error: "Link not found or permission denied" };
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true };
 }
 
-export async function deleteNote(boardId: string, noteId: string) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  try {
-    const db = await getDb();
-    await db.collection("boards").updateOne(
-      {
-        _id: new ObjectId(boardId),
-        $or: [
-          { ownerId: new ObjectId(user._id) },
-          { "members.userId": new ObjectId(user._id) },
-        ],
-      },
-      {
-        $pull: { notes: { id: noteId } },
-        $set: { updatedAt: new Date() },
-      } as any
-    );
-
-    revalidatePath(`/dashboard/${boardId}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting note:", error);
-    return { error: "Failed to delete note" };
-  }
-}
-
-export async function deleteLink(boardId: string, linkId: string) {
-  const user = await getCurrentUser();
-  if (!user) {
-    return { error: "Not authenticated" };
-  }
-
-  try {
-    const db = await getDb();
-    await db.collection("boards").updateOne(
-      {
-        _id: new ObjectId(boardId),
-        $or: [
-          { ownerId: new ObjectId(user._id) },
-          { "members.userId": new ObjectId(user._id) },
-        ],
-      },
-      {
-        $pull: { links: { id: linkId } },
-        $set: { updatedAt: new Date() },
-      } as any
-    );
-
-    revalidatePath(`/dashboard/${boardId}`);
-    return { success: true };
-  } catch (error) {
-    console.error("Error deleting link:", error);
-    return { error: "Failed to delete link" };
-  }
-}
-
-function isFileLike(f: unknown): f is File {
-  return !!f && typeof (f as File).arrayBuffer === "function";
-}
+export type UploadFilesResult =
+  | { success: true; count: number }
+  | { error: string };
 
 export async function uploadFiles(
   boardId: string,
   formData: FormData
 ): Promise<UploadFilesResult> {
   const user = await getCurrentUser();
-  if (!user) {
-    return { error: "Not authenticated" };
+  if (!user) return { error: "Not authenticated" };
+
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+  });
+  if (!board) return { error: "Board not found or access denied" };
+
+  const files = formData.getAll("files");
+  if (!files || files.length === 0) return { error: "No files provided" };
+
+  const uploadRoot = path.join(process.cwd(), "uploads", boardId);
+  fs.mkdirSync(uploadRoot, { recursive: true });
+
+  let saved = 0;
+  for (const f of files) {
+    if (!(f instanceof File)) continue;
+    const arrayBuffer = await (f as File).arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const record = await prisma.fileMeta.create({
+      data: {
+        boardId,
+        name: (f as File).name,
+        size: (f as File).size,
+        type: (f as File).type || "application/octet-stream",
+        uploadedBy: user.name || user.email || user.id,
+      },
+    });
+    const filePath = path.join(uploadRoot, `${record.id}_${(f as File).name}`);
+    fs.writeFileSync(filePath, buffer);
+    saved += 1;
   }
-
-  const incomingFilesUnknown = formData.getAll("files");
-  const incomingFiles: File[] = incomingFilesUnknown.filter(
-    isFileLike
-  ) as File[];
-  if (!incomingFiles || incomingFiles.length === 0) {
-    return { error: "No files provided" };
-  }
-
-  try {
-    const db = await getDb();
-    const bucket = new GridFSBucket(db, { bucketName: "uploads" });
-
-    const uploadedMeta: Array<{
-      id: string;
-      name: string;
-      size: number;
-      type: string;
-      uploadedBy: string;
-      uploadedAt: string;
-      extractedContent?: string;
-    }> = [];
-
-    for (const file of incomingFiles) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const readable = Readable.from(buffer);
-
-      // Extract content from file
-      let extractedContent = "";
-      try {
-        const contentResult = await extractContentWithAI(
-          buffer,
-          file.type,
-          file.name
-        );
-        extractedContent = contentResult.text;
-        console.log(
-          `Extracted content from ${file.name}: ${extractedContent.length} characters`
-        );
-      } catch (error) {
-        console.error(`Failed to extract content from ${file.name}:`, error);
-      }
-
-      const uploadStream = bucket.openUploadStream(file.name, {
-        contentType: file.type,
-        metadata: {
-          boardId,
-          userId: user._id.toString(),
-          size: file.size,
-          extractedContent,
-        },
-      });
-
-      await new Promise<void>((resolve, reject) => {
-        uploadStream.on("finish", () => resolve());
-        uploadStream.on("error", (err) => reject(err));
-        readable.pipe(uploadStream);
-      });
-
-      const fileId = (uploadStream as any).id?.toString();
-      if (fileId) {
-        uploadedMeta.push({
-          id: fileId,
-          name: file.name,
-          size: file.size,
-          type: file.type || "application/octet-stream",
-          uploadedBy: user._id.toString(),
-          uploadedAt: new Date().toISOString(),
-          extractedContent,
-        });
-
-        // If we extracted meaningful content, also save it as a note
-        if (
-          extractedContent &&
-          extractedContent.length > 50 &&
-          !extractedContent.includes("Content extraction not supported")
-        ) {
-          const note = {
-            id: new ObjectId().toString(),
-            content: `📁 **File: ${file.name}**\n\n${extractedContent}`,
-            authorId: user._id.toString(),
-            authorName: user.name,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            sourceFileId: fileId,
-            sourceFileName: file.name,
-          };
-
-          await db
-            .collection("boards")
-            .updateOne({ _id: new ObjectId(boardId) }, {
-              $push: { notes: note },
-            } as any);
-        }
-      }
-    }
-
-    if (uploadedMeta.length === 0) {
-      return { error: "Failed to process files" };
-    }
-
-    await db.collection("boards").updateOne({ _id: new ObjectId(boardId) }, {
-      $push: { files: { $each: uploadedMeta } },
-      $set: { updatedAt: new Date() },
-    } as any);
-
-    revalidatePath(`/dashboard/${boardId}`);
-    return { success: true, count: uploadedMeta.length };
-  } catch (error) {
-    console.error("Error uploading files:", error);
-    return { error: "Failed to upload files" };
-  }
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true, count: saved };
 }
 
 export async function downloadFile(
   fileId: string
 ): Promise<
-  { error: string } | { filename: string; contentType: string; base64: string }
+  { base64: string; contentType: string; filename: string } | { error: string }
 > {
   const user = await getCurrentUser();
   if (!user) return { error: "Not authenticated" };
 
+  const file = await prisma.fileMeta.findFirst({
+    where: {
+      id: fileId,
+      board: {
+        OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+      },
+    },
+  });
+  if (!file) return { error: "File not found or access denied" };
+
+  const filePath = path.join(
+    process.cwd(),
+    "uploads",
+    file.boardId,
+    `${file.id}_${file.name}`
+  );
+  if (!fs.existsSync(filePath)) return { error: "File content missing" };
+  const data = fs.readFileSync(filePath);
+  return {
+    base64: data.toString("base64"),
+    contentType: file.type,
+    filename: file.name,
+  };
+}
+
+export async function deleteFile(boardId: string, fileId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const file = await prisma.fileMeta.findFirst({
+    where: {
+      id: fileId,
+      boardId,
+      board: {
+        OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+      },
+    },
+  });
+  if (!file) return { error: "File not found or access denied" };
+
+  const filePath = path.join(
+    process.cwd(),
+    "uploads",
+    file.boardId,
+    `${file.id}_${file.name}`
+  );
   try {
-    const db = await getDb();
-    const bucket = new GridFSBucket(db, { bucketName: "uploads" });
-
-    const files = await db
-      .collection("uploads.files")
-      .find({ _id: new ObjectId(fileId) })
-      .toArray();
-    if (!files || files.length === 0) {
-      return { error: "File not found" };
-    }
-    const doc = files[0] as unknown as {
-      filename: string;
-      contentType?: string;
-    };
-
-    const stream = bucket.openDownloadStream(new ObjectId(fileId));
-    const chunks: Buffer[] = [];
-    await new Promise<void>((resolve, reject) => {
-      stream.on("data", (chunk) =>
-        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk))
-      );
-      stream.on("end", () => resolve());
-      stream.on("error", (err) => reject(err));
-    });
-
-    const buffer = Buffer.concat(chunks);
-    const base64 = buffer.toString("base64");
-
-    return {
-      filename: doc.filename,
-      contentType: doc.contentType || "application/octet-stream",
-      base64,
-    };
-  } catch (error) {
-    console.error("Error downloading file:", error);
-    return { error: "Failed to download file" };
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+  } catch (e) {
+    // ignore deletion error of fs; continue to remove metadata
   }
+
+  await prisma.fileMeta.delete({ where: { id: fileId } });
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true };
+}
+
+export async function generateAISummary(
+  boardId: string
+): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+    include: { notes: true, links: true, files: true },
+  });
+  if (!board) return { error: "Board not found or access denied" };
+
+  const lines: string[] = [];
+  if (board.notes.length) {
+    lines.push(`Notes (${board.notes.length}):`);
+    lines.push(
+      ...board.notes
+        .slice(0, 5)
+        .map(
+          (n) =>
+            `- ${n.content.substring(0, 200)}${
+              n.content.length > 200 ? "…" : ""
+            }`
+        )
+    );
+  }
+  if (board.links.length) {
+    lines.push(`Links (${board.links.length}):`);
+    lines.push(
+      ...board.links.slice(0, 5).map((l) => `- ${l.title} (${l.url})`)
+    );
+  }
+  async function extractFileText(f: {
+    id: string;
+    name: string;
+    type: string;
+    boardId: string;
+  }) {
+    // Use cached extractedContent if available
+    const meta = await prisma.fileMeta.findUnique({ where: { id: f.id } });
+    if (meta?.extractedContent) return meta.extractedContent;
+
+    const filePath = path.join(
+      process.cwd(),
+      "uploads",
+      f.boardId,
+      `${f.id}_${f.name}`
+    );
+    if (!fs.existsSync(filePath)) return "";
+
+    const buffer = fs.readFileSync(filePath);
+    const ext = f.name.toLowerCase();
+    const mime = f.type || "";
+    let text = "";
+
+    try {
+      if (mime.startsWith("text/") || ext.endsWith(".txt")) {
+        text = buffer.toString("utf8");
+      } else if (ext.endsWith(".pdf")) {
+        const pdfParse = await import("pdf-parse/lib/pdf-parse.js");
+        const pdfFn = (pdfParse as any).default || pdfParse;
+        const data = await pdfFn(buffer);
+        text = data.text || "";
+      } else if (ext.endsWith(".docx") || ext.endsWith(".doc")) {
+        const mammoth = await import("mammoth");
+        const res = await mammoth.extractRawText({ buffer });
+        text = res.value || "";
+      } else if (ext.endsWith(".csv")) {
+        const Papa = await import("papaparse");
+        const csv = buffer.toString("utf8");
+        const parsed = Papa.parse(csv, { delimiter: ",", newline: "\n" });
+        const rows = (parsed.data as string[][])
+          .slice(0, 10)
+          .map((r) => r.join(", "))
+          .join("\n");
+        text = rows;
+      } else if (ext.endsWith(".xlsx")) {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(buffer, { type: "buffer" });
+        const firstSheet = wb.SheetNames[0];
+        if (firstSheet) {
+          const sheet = wb.Sheets[firstSheet];
+          const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          text = (data as string[][])
+            .slice(0, 10)
+            .map((r) => r.join(", "))
+            .join("\n");
+        }
+      } else if (
+        mime.startsWith("image/") ||
+        ext.match(/\.(png|jpe?g|gif|bmp|tiff|webp)$/)
+      ) {
+        // Use Gemini API for OCR instead of Tesseract to avoid worker issues
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        if (apiKey) {
+          const { GoogleGenerativeAI } = await import("@google/generative-ai");
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+          const imagePart = {
+            inlineData: {
+              mimeType: mime.startsWith("image/") ? mime : "image/png",
+              data: buffer.toString("base64"),
+            },
+          };
+
+          const prompt =
+            "Extract all readable text from this image. Return only the text content, preserving line breaks.";
+          const result = await model.generateContent([prompt, imagePart]);
+          text = result.response.text().trim();
+        } else {
+          text = "[Image OCR unavailable: missing GEMINI_API_KEY]";
+        }
+      }
+    } catch (error) {
+      console.error(`Error extracting content from ${f.name}:`, error);
+      text = `[Error extracting content from ${f.name}]`;
+    }
+
+    const snippet = text.trim().slice(0, 4000);
+    try {
+      await prisma.fileMeta.update({
+        where: { id: f.id },
+        data: { extractedContent: snippet },
+      });
+    } catch {}
+    return snippet;
+  }
+
+  // Detailed file analysis for better summaries
+  const fileDetails: Array<{ name: string; type: string; content: string }> =
+    [];
+  if (board.files.length) {
+    const sample = board.files.slice(0, 5);
+    for (const f of sample) {
+      const text = await extractFileText({
+        id: f.id,
+        name: f.name,
+        type: f.type,
+        boardId,
+      });
+      if (text && text.length > 10) {
+        fileDetails.push({
+          name: f.name,
+          type: f.type,
+          content: text.slice(0, 1000), // More content for AI analysis
+        });
+      }
+    }
+  }
+
+  let aggregatedContext = lines.join("\n");
+  if (fileDetails.length > 0) {
+    const fileLines = [`Files (${board.files.length}):`];
+    fileDetails.forEach(({ name, content }) => {
+      const snippet = content.replace(/\s+/g, " ").slice(0, 300);
+      if (snippet) {
+        fileLines.push(
+          `- ${name}: ${snippet}${content.length > 300 ? "…" : ""}`
+        );
+      } else {
+        fileLines.push(`- ${name}`);
+      }
+    });
+    aggregatedContext = [aggregatedContext, fileLines.join("\n")]
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (!aggregatedContext.trim())
+    aggregatedContext = "No content yet to summarize.";
+
+  // Enhanced AI summarization with better prompting
+  let finalContent = aggregatedContext;
+  try {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+    if (apiKey) {
+      const { GoogleGenerativeAI } = await import("@google/generative-ai");
+      const genAI = new GoogleGenerativeAI(apiKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+      const prompt = `Analyze and summarize this board content. Create a structured summary with bullet points.
+
+For each file, mention:
+- **File name** and what type of content it contains
+- **Key topics** or main points from the content
+- **Important details** like problem statements, equations, data, or actionable items
+
+For notes and links, highlight:
+- **Main themes** and topics discussed
+- **Important information** or conclusions
+- **Relationships** between different pieces of content
+
+Content to analyze:
+${aggregatedContext}
+
+Format as markdown with clear headings and bullet points. Be concise but specific.`;
+
+      const result = await model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      });
+      const text = result.response.text();
+      if (text && text.trim().length > 0) finalContent = text.trim();
+    }
+  } catch (error) {
+    console.error("AI summarization failed:", error);
+    // Keep heuristic summary as fallback
+  }
+
+  // Persist the final summary
+  await prisma.aISummary.create({
+    data: { boardId, content: finalContent, generatedBy: user.id },
+  });
+  revalidatePath(`/dashboard/${boardId}`);
+  return { success: true };
 }

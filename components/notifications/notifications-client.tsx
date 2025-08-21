@@ -8,20 +8,20 @@ import { NotificationList } from "@/components/notifications/notification-list";
 import {
   getNotifications,
   markAllNotificationsAsRead,
-  type Notification,
+  type NotificationDTO,
 } from "@/actions/notifications";
 import { ArrowLeft, Bell, CheckCheck } from "lucide-react";
 import Link from "next/link";
 
 interface NotificationsClientProps {
-  initialNotifications: Notification[];
+  initialNotifications: NotificationDTO[];
 }
 
 export function NotificationsClient({
   initialNotifications,
 }: NotificationsClientProps) {
   const [notifications, setNotifications] =
-    useState<Notification[]>(initialNotifications);
+    useState<NotificationDTO[]>(initialNotifications);
   const [isLoading, setIsLoading] = useState(false);
   const [lastFetch, setLastFetch] = useState(Date.now());
 
@@ -32,19 +32,16 @@ export function NotificationsClient({
 
     const pollNotifications = async () => {
       if (!isActive) return;
-
       const now = Date.now();
       const timeSinceLastFetch = now - lastFetch;
-
       if (timeSinceLastFetch < 3000) return;
-
       try {
-        const updatedNotifications = await getNotifications();
+        const updated = await getNotifications();
         if (
           isActive &&
-          JSON.stringify(updatedNotifications) !== JSON.stringify(notifications)
+          JSON.stringify(updated) !== JSON.stringify(notifications)
         ) {
-          setNotifications(updatedNotifications);
+          setNotifications(updated);
           setLastFetch(now);
         }
       } catch (error) {
@@ -53,7 +50,6 @@ export function NotificationsClient({
     };
 
     const interval = setInterval(pollNotifications, 3000);
-
     return () => {
       isActive = false;
       clearInterval(interval);
@@ -64,12 +60,7 @@ export function NotificationsClient({
     setIsLoading(true);
     try {
       await markAllNotificationsAsRead();
-
-      setNotifications((prev) =>
-        prev.map((notification) => ({ ...notification, read: true }))
-      );
-    } catch (error) {
-      console.error("Error marking all as read:", error);
+      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     } finally {
       setIsLoading(false);
     }
@@ -78,7 +69,6 @@ export function NotificationsClient({
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-6 max-w-4xl">
-        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
@@ -97,7 +87,6 @@ export function NotificationsClient({
               )}
             </div>
           </div>
-
           {unreadCount > 0 && (
             <Button
               variant="outline"
@@ -111,7 +100,6 @@ export function NotificationsClient({
           )}
         </div>
 
-        {/* Notifications List */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

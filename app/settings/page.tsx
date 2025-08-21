@@ -1,79 +1,88 @@
-import { Suspense } from "react"
-import { redirect } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { getCurrentUser } from "@/lib/auth"
-import { getUser } from "@/actions/profile"
-import { ChangePasswordForm } from "@/components/settings/change-password-form"
-import { NotificationSettings } from "@/components/settings/notification-settings"
-import { DangerZone } from "@/components/settings/danger-zone"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { Brain, ArrowLeft, User, LogOut } from "lucide-react"
-import { logoutUser } from "@/actions/auth"
+import { Suspense } from "react";
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { getCurrentUser } from "@/lib/auth";
+import { getUser } from "@/actions/profile";
+import { ChangePasswordForm } from "../../components/settings/change-password-form";
+import { NotificationSettingsForm } from "../../components/settings/notification-settings-form";
+import { DangerZone } from "../../components/settings/danger-zone";
+import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
 
 async function SettingsContent() {
-  const currentUser = await getCurrentUser()
-  if (!currentUser) {
-    redirect("/login")
-  }
-
-  const user = await getUser()
-  if (!user) {
-    redirect("/login")
-  }
+  const currentUser = await getCurrentUser();
+  if (!currentUser) redirect("/login");
+  const user = await getUser();
+  if (!user) redirect("/login");
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" asChild>
-              <Link href="/dashboard">
-                <ArrowLeft className="h-4 w-4" />
-              </Link>
-            </Button>
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <Brain className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold text-foreground">MindMesh</span>
+      <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <SettingsIcon className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold">Settings</h1>
+          </div>
+          <Button variant="ghost" size="sm" asChild>
+            <Link href="/dashboard">
+              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
             </Link>
-          </div>
-          <div className="flex items-center gap-4">
-            <Button variant="outline" size="sm" asChild className="gap-2 bg-transparent">
-              <Link href="/profile">
-                <User className="h-4 w-4" />
-                Profile
-              </Link>
-            </Button>
-            <ThemeToggle />
-            <form action={logoutUser}>
-              <Button variant="ghost" size="icon" type="submit">
-                <LogOut className="h-4 w-4" />
-              </Button>
-            </form>
-          </div>
+          </Button>
         </div>
-      </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="space-y-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
-            <p className="text-muted-foreground">Manage your account settings and preferences</p>
-          </div>
+        <div className="grid gap-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Security</CardTitle>
+              <CardDescription>
+                Update your password to keep your account secure.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChangePasswordForm />
+            </CardContent>
+          </Card>
 
-          {/* Change Password */}
-          <ChangePasswordForm />
+          <Card>
+            <CardHeader>
+              <CardTitle>Preferences</CardTitle>
+              <CardDescription>
+                Control notifications and AI suggestions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <NotificationSettingsForm
+                settings={{
+                  emailNotifications: !!user.settings?.emailNotifications,
+                  aiSuggestions: !!user.settings?.aiSuggestions,
+                }}
+              />
+            </CardContent>
+          </Card>
 
-          {/* Notification Settings */}
-          <NotificationSettings user={user} />
-
-          {/* Danger Zone */}
-          <DangerZone />
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-red-600">Danger Zone</CardTitle>
+              <CardDescription>
+                Delete your account and all associated data. This action cannot
+                be undone.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DangerZone />
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function SettingsPage() {
@@ -81,5 +90,5 @@ export default function SettingsPage() {
     <Suspense fallback={<div>Loading...</div>}>
       <SettingsContent />
     </Suspense>
-  )
+  );
 }

@@ -1,55 +1,64 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Plus, X } from "lucide-react"
-import { addLink } from "@/actions/board-content"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Plus, X } from "lucide-react";
+import { addLink, type ActionResult } from "@/actions/board-content";
 
 interface AddLinkFormProps {
-  boardId: string
+  boardId: string;
 }
 
 export function AddLinkForm({ boardId }: AddLinkFormProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const [url, setUrl] = useState("")
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [error, setError] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isOpen, setIsOpen] = useState(false);
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setIsLoading(true)
-    setError("")
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
 
-    const result = await addLink(boardId, url, title, description)
+    const result: ActionResult = await addLink(
+      boardId,
+      url,
+      title,
+      description
+    );
 
-    if (result.error) {
-      setError(result.error)
-      setIsLoading(false)
+    if ("error" in result) {
+      setError(result.error);
+      setIsLoading(false);
     } else {
-      setUrl("")
-      setTitle("")
-      setDescription("")
-      setIsOpen(false)
-      setIsLoading(false)
+      setUrl("");
+      setTitle("");
+      setDescription("");
+      setIsOpen(false);
+      setIsLoading(false);
     }
   }
 
   if (!isOpen) {
     return (
-      <Button onClick={() => setIsOpen(true)} variant="outline" className="w-full gap-2">
+      <Button
+        onClick={() => setIsOpen(true)}
+        variant="outline"
+        className="w-full gap-2"
+      >
         <Plus className="h-4 w-4" />
         Add Link
       </Button>
-    )
+    );
   }
 
   return (
@@ -102,15 +111,23 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
             </Alert>
           )}
           <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={() => setIsOpen(false)} disabled={isLoading}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsOpen(false)}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading || !url.trim() || !title.trim()}>
+            <Button
+              type="submit"
+              disabled={isLoading || !url.trim() || !title.trim()}
+            >
               {isLoading ? "Adding..." : "Add Link"}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

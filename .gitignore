@@ -39,5 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+generated/prisma
+uploads
 bun.lockb
-example
+package-lock.json
+yarn.lock
+.next
+.idea

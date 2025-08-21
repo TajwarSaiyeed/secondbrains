@@ -1,188 +1,233 @@
 "use server";
 
-import "server-only";
-import { redirect } from "next/navigation";
-import { ObjectId } from "mongodb";
-import { getDb } from "@/lib/db";
+import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
-import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { createNotification } from "@/actions/notifications";
 
-export async function getBoards() {
+export type BoardMemberDTO = {
+  userId: string;
+  name: string | null;
+  email: string | null;
+  role: string;
+};
+export type NoteDTO = {
+  id: string;
+  content: string;
+  authorId: string;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type LinkDTO = {
+  id: string;
+  url: string;
+  title: string;
+  description: string | null;
+  authorId: string;
+  authorName: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+export type FileDTO = {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  uploadedBy: string | null;
+  uploadedAt: string;
+};
+export type AISummaryDTO =
+  | { id: string; content: string; generatedAt: string; generatedBy: string }
+  | undefined;
+export type BoardDTO = {
+  id: string;
+  title: string;
+  description: string | null;
+  ownerId: string;
+  members: BoardMemberDTO[];
+  notes: NoteDTO[];
+  links: LinkDTO[];
+  files: FileDTO[];
+  updatedAt: string;
+  aiSummary?: AISummaryDTO;
+};
+
+export type BoardSummaryDTO = {
+  id: string;
+  title: string;
+  description: string | null;
+  ownerId: string;
+  members: BoardMemberDTO[];
+  notes: Array<{ id: string }>;
+  links: Array<{ id: string }>;
+  files: Array<{ id: string }>;
+  updatedAt: string;
+};
+
+export async function getBoards(): Promise<BoardSummaryDTO[]> {
   const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  try {
-    const db = await getDb();
-    const boards = await db
-      .collection("boards")
-      .find({
-        $or: [{ ownerId: user._id }, { "members.userId": user._id }],
-      })
-      .sort({ updatedAt: -1 })
-      .toArray();
+  const boards = await prisma.board.findMany({
+    where: {
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      members: true,
+      notes: { select: { id: true } },
+      links: { select: { id: true } },
+      files: { select: { id: true } },
+    },
+  });
 
-    return boards.map((board) => ({
-      _id: board._id.toString(),
-      title: board.title || "",
-      description: board.description || "",
-      ownerId: board.ownerId.toString(),
-      members:
-        board.members?.map((member: any) => ({
-          userId: member.userId.toString(),
-          name: member.name,
-          email: member.email,
-          role: member.role,
-        })) || [],
-      notes:
-        board.notes?.map((note: any) => ({
-          id: note.id || note._id?.toString(),
-        })) || [],
-      links:
-        board.links?.map((link: any) => ({
-          id: link.id || link._id?.toString(),
-        })) || [],
-      files:
-        board.files?.map((file: any) => ({
-          id: file.id || file._id?.toString(),
-        })) || [],
-      updatedAt: board.updatedAt?.toISOString() || new Date().toISOString(),
-    }));
-  } catch (error) {
-    console.error("Error fetching boards:", error);
-    return [];
-  }
+  return boards.map((b) => ({
+    id: b.id,
+    title: b.title,
+    description: b.description,
+    ownerId: b.ownerId,
+    members: b.members.map((m) => ({
+      userId: m.userId,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+    })),
+    notes: b.notes.map((n) => ({ id: n.id })),
+    links: b.links.map((l) => ({ id: l.id })),
+    files: b.files.map((f) => ({ id: f.id })),
+    updatedAt: b.updatedAt.toISOString(),
+  }));
 }
 
 export async function createBoard(formData: FormData) {
   const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  const title = formData.get("title") as string;
-  const description = formData.get("description") as string;
-
-  if (!title || !description) {
+  const title = String(formData.get("title") || "").trim();
+  const description = String(formData.get("description") || "").trim();
+  if (!title || !description)
     return { error: "Title and description are required" };
-  }
 
-  let newBoardId: string | null = null;
-  try {
-    const db = await getDb();
-    const result = await db.collection("boards").insertOne({
+  const board = await prisma.board.create({
+    data: {
       title,
       description,
-      ownerId: new ObjectId(user._id),
-      members: [
-        {
-          userId: new ObjectId(user._id),
+      ownerId: user.id,
+      members: {
+        create: {
+          userId: user.id,
           name: user.name,
           email: user.email,
           role: "owner",
-          joinedAt: new Date(),
         },
-      ],
-      notes: [],
-      links: [],
-      files: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    newBoardId = result.insertedId.toString();
-  } catch (error) {
-    console.error("Error creating board:", error);
-    return { error: "Failed to create board" };
-  }
+      },
+    },
+  });
 
-  redirect(`/dashboard/${newBoardId}`);
+  redirect(`/dashboard/${board.id}`);
 }
 
-export async function getBoard(boardId: string) {
+export async function getBoard(boardId: string): Promise<BoardDTO | null> {
   const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  try {
-    const db = await getDb();
-    const board = await db.collection("boards").findOne({
-      _id: new ObjectId(boardId),
-      $or: [
-        { ownerId: new ObjectId(user._id) },
-        { "members.userId": new ObjectId(user._id) },
-      ],
-    });
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+    include: {
+      members: true,
+      notes: true,
+      links: true,
+      files: true,
+      aiSummaries: {
+        orderBy: { generatedAt: "desc" },
+        take: 1,
+      },
+    },
+  });
 
-    if (!board) {
-      return null;
-    }
+  if (!board) return null;
 
-    return {
-      ...board,
-      _id: board._id.toString(),
-      ownerId: board.ownerId.toString(),
-      members: board.members.map((member: any) => ({
-        ...member,
-        userId: member.userId.toString(),
-      })),
-    };
-  } catch (error) {
-    console.error("Error fetching board:", error);
-    return null;
-  }
+  const aiSummary = board.aiSummaries[0]
+    ? {
+        id: board.aiSummaries[0].id,
+        content: board.aiSummaries[0].content,
+        generatedAt: board.aiSummaries[0].generatedAt.toISOString(),
+        generatedBy: board.aiSummaries[0].generatedBy,
+      }
+    : undefined;
+
+  return {
+    id: board.id,
+    title: board.title,
+    description: board.description,
+    ownerId: board.ownerId,
+    members: board.members.map((m) => ({
+      userId: m.userId,
+      name: m.name,
+      email: m.email,
+      role: m.role,
+    })),
+    notes: board.notes.map((n) => ({
+      id: n.id,
+      content: n.content,
+      authorId: n.authorId,
+      authorName: n.authorName,
+      createdAt: n.createdAt.toISOString(),
+      updatedAt: n.updatedAt.toISOString(),
+    })),
+    links: board.links.map((l) => ({
+      id: l.id,
+      url: l.url,
+      title: l.title,
+      description: l.description,
+      authorId: l.authorId,
+      authorName: l.authorName,
+      createdAt: l.createdAt.toISOString(),
+      updatedAt: l.updatedAt.toISOString(),
+    })),
+    files: board.files.map((f) => ({
+      id: f.id,
+      name: f.name,
+      size: f.size,
+      type: f.type,
+      uploadedBy: f.uploadedBy,
+      uploadedAt: f.uploadedAt.toISOString(),
+    })),
+    updatedAt: board.updatedAt.toISOString(),
+    aiSummary,
+  };
 }
 
 export async function deleteBoard(boardId: string) {
   const user = await getCurrentUser();
-  if (!user) {
-    redirect("/login");
-  }
+  if (!user) redirect("/login");
 
-  let deleted = false;
-  try {
-    const db = await getDb();
-    const result = await db.collection("boards").deleteOne({
-      _id: new ObjectId(boardId),
-      ownerId: new ObjectId(user._id),
-    });
-
-    if (result.deletedCount === 0) {
-      return {
-        error: "Board not found or you don't have permission to delete it",
-      };
-    }
-    deleted = true;
-  } catch (error) {
-    console.error("Error deleting board:", error);
-    return { error: "Failed to delete board" };
+  const res = await prisma.board.deleteMany({
+    where: { id: boardId, ownerId: user.id },
+  });
+  if (res.count === 0) {
+    return { error: "Board not found or permission denied" };
   }
-
-  if (deleted) {
-    redirect("/dashboard");
-  }
+  redirect("/dashboard");
 }
 
 export async function generateInvite(boardId: string) {
   const user = await getCurrentUser();
   if (!user) return { error: "Not authenticated" };
 
-  try {
-    const db = await getDb();
-    const token = new ObjectId().toString();
-    await db.collection("boards").updateOne({ _id: new ObjectId(boardId) }, {
-      $set: { inviteToken: token, updatedAt: new Date() },
-    } as any);
-    const link = `${
-      process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
-    }/invite/${token}`;
-    return { link };
-  } catch (e) {
-    console.error("Error generating invite:", e);
-    return { error: "Failed to generate invite link" };
-  }
+  const token = crypto.randomUUID().replace(/-/g, "");
+  await prisma.board.update({
+    where: { id: boardId },
+    data: { inviteToken: token },
+  });
+  const link = `${
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+  }/invite/${token}`;
+  return { link };
 }
 
 export async function inviteUsers(
@@ -198,68 +243,56 @@ export async function inviteUsers(
   );
   if (unique.length === 0) return { error: "No valid emails" };
 
-  try {
-    const db = await getDb();
+  const board = await prisma.board.findFirst({
+    where: { id: boardId, ownerId: user.id },
+    include: { members: true },
+  });
+  if (!board) return { error: "Board not found or you don't have permission" };
 
-    const board = await db.collection("boards").findOne({
-      _id: new ObjectId(boardId),
-      ownerId: new ObjectId(user._id),
-    });
+  const existingUsers = await prisma.user.findMany({
+    where: { email: { in: unique } },
+  });
+  const existingEmails = existingUsers.map((u) =>
+    (u.email || "").toLowerCase()
+  );
+  const pendingEmails = unique.filter(
+    (email) => !existingEmails.includes(email)
+  );
 
-    if (!board) {
-      return { error: "Board not found or you don't have permission" };
-    }
-
-    const existingUsers = await db
-      .collection("users")
-      .find({ email: { $in: unique } })
-      .toArray();
-
-    const existingEmails = existingUsers.map((u) => u.email.toLowerCase());
-    const pendingEmails = unique.filter(
-      (email) => !existingEmails.includes(email)
+  const existingTargets = existingUsers.filter(
+    (u) => !board.members.some((m) => m.userId === u.id) && u.id !== user.id
+  );
+  if (existingTargets.length > 0) {
+    await Promise.all(
+      existingTargets.map((u) =>
+        createNotification(
+          u.id,
+          "board_invite",
+          `Invitation to join ${board.title}`,
+          `${user.name || user.email || "Someone"} invited you to join "${
+            board.title
+          }"`,
+          { boardId, fromUserId: user.id }
+        )
+      )
     );
-
-    for (const existingUser of existingUsers) {
-      await createNotification(
-        existingUser._id.toString(),
-        "board_invite",
-        "Board Invitation",
-        `${user.name} invited you to join "${board.title}"${
-          message ? `: ${message}` : ""
-        }`,
-        {
-          boardId: boardId,
-          fromUserId: user._id.toString(),
-          fromUserName: user.name,
-        }
-      );
-    }
-
-    if (pendingEmails.length > 0) {
-      await db.collection("boards").updateOne({ _id: new ObjectId(boardId) }, {
-        $addToSet: {
-          pendingInvites: {
-            $each: pendingEmails.map((email) => ({
-              email,
-              invitedBy: user._id.toString(),
-              invitedAt: new Date(),
-              message,
-            })),
-          },
-        },
-        $set: { updatedAt: new Date() },
-      } as any);
-    }
-
-    revalidatePath(`/dashboard/${boardId}`);
-    return {
-      success: true,
-      notified: existingEmails.length,
-      pending: pendingEmails.length,
-    };
-  } catch (e) {
-    console.error("Error inviting users:", e);
-    return { error: "Failed to send invitations" };
   }
+
+  if (pendingEmails.length > 0) {
+    await prisma.pendingInvite.createMany({
+      data: pendingEmails.map((email) => ({
+        boardId,
+        email,
+        invitedBy: user.id,
+        message,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  return {
+    success: true,
+    notified: existingTargets.length,
+    pending: pendingEmails.length,
+  };
 }

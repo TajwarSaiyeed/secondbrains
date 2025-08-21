@@ -6,8 +6,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Send, Bot } from "lucide-react";
-import { sendMessage, askAI } from "@/actions/discussions";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Send, Bot, Globe, FileText } from "lucide-react";
+import { sendMessage, askAI, type ActionResult } from "@/actions/discussions";
 
 interface MessageInputProps {
   boardId: string;
@@ -18,6 +20,7 @@ export function MessageInput({ boardId, onMessageSent }: MessageInputProps) {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [allowExternalResources, setAllowExternalResources] = useState(false);
 
   async function handleSendMessage(e: React.FormEvent) {
     e.preventDefault();
@@ -26,9 +29,9 @@ export function MessageInput({ boardId, onMessageSent }: MessageInputProps) {
     setIsLoading(true);
     setError("");
 
-    const result = await sendMessage(boardId, message);
+    const result: ActionResult = await sendMessage(boardId, message);
 
-    if (result.error) {
+    if ("error" in result) {
       setError(result.error);
     } else {
       setMessage("");
@@ -44,9 +47,13 @@ export function MessageInput({ boardId, onMessageSent }: MessageInputProps) {
     setIsLoading(true);
     setError("");
 
-    const result = await askAI(boardId, message);
+    const result: ActionResult = await askAI(
+      boardId,
+      message,
+      allowExternalResources
+    );
 
-    if (result.error) {
+    if ("error" in result) {
       setError(result.error);
     } else {
       setMessage("");
@@ -83,16 +90,43 @@ export function MessageInput({ boardId, onMessageSent }: MessageInputProps) {
         />
 
         <div className="flex justify-between items-center">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleAskAI}
-            disabled={isLoading || !message.trim()}
-            className="gap-2 bg-transparent"
-          >
-            <Bot className="h-4 w-4" />
-            Ask AI
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleAskAI}
+              disabled={isLoading || !message.trim()}
+              className="gap-2 bg-transparent"
+            >
+              <Bot className="h-4 w-4" />
+              Ask AI
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Switch
+                id="external-resources"
+                checked={allowExternalResources}
+                onCheckedChange={setAllowExternalResources}
+                disabled={isLoading}
+              />
+              <Label
+                htmlFor="external-resources"
+                className="text-xs text-muted-foreground cursor-pointer flex items-center gap-1"
+              >
+                {allowExternalResources ? (
+                  <>
+                    <Globe className="h-3 w-3" />
+                    External knowledge
+                  </>
+                ) : (
+                  <>
+                    <FileText className="h-3 w-3" />
+                    Board content only
+                  </>
+                )}
+              </Label>
+            </div>
+          </div>
 
           <Button
             type="submit"
