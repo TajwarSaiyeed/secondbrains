@@ -5,6 +5,140 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
+async function fetchWebpageContent(url: string): Promise<string> {
+  try {
+    const urlObj = new URL(url);
+    if (!["http:", "https:"].includes(urlObj.protocol)) {
+      throw new Error("Only HTTP/HTTPS URLs are supported");
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        "User-Agent": "MindMesh-AI/1.0 (Educational Content Fetcher)",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.5",
+        "Accept-Encoding": "gzip, deflate",
+        DNT: "1",
+        Connection: "keep-alive",
+        "Upgrade-Insecure-Requests": "1",
+      },
+      signal: AbortSignal.timeout(15000), // 15 second timeout
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("text/html")) {
+      throw new Error("Content is not HTML");
+    }
+
+    const html = await response.text();
+    // console.log(
+    //   `Successfully fetched content from ${url} - Length: ${html.length} characters`
+    // );
+
+    // Enhanced content extraction for educational and research content
+    let textContent = html
+      // Remove script and style elements completely (including content)
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+      // Remove HTML comments
+      .replace(/<!--[\s\S]*?-->/g, "")
+      // Remove common noise elements
+      .replace(/<nav\b[^>]*>[\s\S]*?<\/nav>/gi, "")
+      .replace(/<header\b[^>]*>[\s\S]*?<\/header>/gi, "")
+      .replace(/<footer\b[^>]*>[\s\S]*?<\/footer>/gi, "")
+      .replace(/<aside\b[^>]*>[\s\S]*?<\/aside>/gi, "")
+      .replace(/class="[^"]*ad[^"]*"/gi, "") // Remove ad-related elements
+      // Preserve structure for educational content
+      .replace(/<\/?(h[1-6])\b[^>]*>/gi, "\n\n### ") // Convert headings with markdown
+      .replace(/<\/?(p|div|article|section)\b[^>]*>/gi, "\n\n")
+      .replace(/<\/?(li|dt|dd)\b[^>]*>/gi, "\n• ") // Convert list items to bullets
+      .replace(/<\/?(ul|ol|dl)\b[^>]*>/gi, "\n")
+      .replace(/<\/?(pre|code)\b[^>]*>/gi, "\n```\n") // Preserve code structure
+      .replace(/<\/?(blockquote)\b[^>]*>/gi, "\n> ") // Convert quotes
+      .replace(/<\/?(strong|b)\b[^>]*>/gi, "**") // Convert bold to markdown
+      .replace(/<\/?(em|i)\b[^>]*>/gi, "*") // Convert italic to markdown
+      .replace(/<\/?(br|hr)\b[^>]*>/gi, "\n")
+      .replace(/<[^>]*>/g, " ") // Remove remaining HTML tags
+      // Decode HTML entities
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&hellip;/g, "...")
+      // Clean up whitespace and normalize
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
+      .replace(/\n\s*\n/g, "\n\n")
+      .replace(/[ \t]+/g, " ")
+      .trim();
+
+    // Filter out very short lines and common noise, but keep meaningful content
+    const lines = textContent
+      .split("\n")
+      .map((line) => line.trim())
+      .filter((line) => {
+        if (line.length < 3) return false; // Keep very minimal filtering
+
+        // Keep lines with technical/educational indicators (more generic)
+        if (
+          /\b(function|method|class|example|tutorial|code|syntax|definition|explanation)\b/i.test(
+            line
+          )
+        )
+          return true;
+        if (/[:=(){}[\];,.]/.test(line)) return true; // Keep lines with code-like syntax
+        if (/\b\d+\.\s/.test(line)) return true; // Keep numbered lists
+        if (/^[\s]*[•\-\*]\s/.test(line)) return true; // Keep bullet points
+
+        if (line.length < 8) return false; // Filter very short lines after checking special cases
+
+        // Filter out common navigation and footer noise
+        if (
+          /^(Home|About|Contact|Privacy|Terms|Login|Register|Search|Menu|Subscribe|Follow|Share)$/i.test(
+            line
+          )
+        )
+          return false;
+        if (
+          /^(Copyright|©|\d{4}|All rights reserved|Terms of Service|Privacy Policy)$/i.test(
+            line
+          )
+        )
+          return false;
+        if (/^(Next|Previous|Back|Continue|Submit|Cancel|Close)$/i.test(line))
+          return false;
+
+        return true;
+      });
+
+    textContent = lines.join("\n");
+
+    // Return meaningful content or indicate failure
+    if (textContent.length < 100) {
+      // console.log(
+      //   `Extracted content too short from ${url}: ${textContent.length} characters`
+      // );
+      return "";
+    }
+
+    // console.log(
+    //   `Successfully extracted ${textContent.length} characters from ${url}`
+    // );
+    return textContent;
+  } catch (error) {
+    // console.error(`Error fetching content from ${url}:`, error);
+    throw error;
+  }
+}
+
 export type ActionResult = { success: true } | { error: string };
 export type DiscussionMessage = {
   id: string;
@@ -103,11 +237,11 @@ export async function askAI(
   });
   if (!board) return { error: "Board not found or access denied" };
 
-  // Get recent messages for context
+  // Get recent messages for context (increased to 25 for better conversation memory)
   const recentMessages = await prisma.message.findMany({
     where: { boardId },
     orderBy: { createdAt: "desc" },
-    take: 10,
+    take: 25,
   });
 
   // Build comprehensive context including extracted file content
@@ -124,38 +258,103 @@ export async function askAI(
     });
   }
 
-  // Add links with descriptions
+  // Add links with fetched content
   if (board.links.length > 0) {
-    contextParts.push("=== LINKS ===");
-    board.links.forEach((link) => {
-      contextParts.push(
-        `Link: ${link.title} - ${link.description} (${link.url})`
-      );
-    });
-  }
+    contextParts.push("=== LINKS WITH FETCHED CONTENT ===");
+    contextParts.push("(Content fetched from the actual webpages)");
 
-  // Add extracted content from files
-  if (board.files.length > 0) {
-    contextParts.push("=== FILES AND EXTRACTED CONTENT ===");
-    board.files.forEach((file) => {
-      if (file.extractedContent) {
-        contextParts.push(`File: ${file.name} (${file.type})`);
-        contextParts.push(`Content: ${file.extractedContent}`);
-        contextParts.push("---");
-      } else {
+    for (const link of board.links) {
+      contextParts.push(`\n🔗 LINK: ${link.title}`);
+      contextParts.push(`📝 Description: ${link.description}`);
+      contextParts.push(`🌐 URL: ${link.url}`);
+
+      try {
+        const fetchedContent = await fetchWebpageContent(link.url);
+        if (fetchedContent && fetchedContent.length > 50) {
+          contextParts.push(`📄 FETCHED CONTENT:`);
+          const maxContentLength = 15000;
+          const limitedContent =
+            fetchedContent.length > maxContentLength
+              ? fetchedContent.substring(0, maxContentLength) +
+                "... [content truncated - for complete content, visit the link directly]"
+              : fetchedContent;
+          contextParts.push(limitedContent);
+        } else {
+          contextParts.push(
+            `❌ Could not fetch readable content from this link`
+          );
+        }
+      } catch (error) {
         contextParts.push(
-          `File: ${file.name} (${file.type}) - No extracted content available`
+          `❌ Error fetching content: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
         );
       }
-    });
+
+      contextParts.push("─".repeat(50));
+    }
+
+    contextParts.push("=== END LINKS CONTENT ===");
   }
 
-  // Add recent conversation context
+  // Add extracted content from files (prioritized for detailed analysis)
+  if (board.files.length > 0) {
+    contextParts.push("=== EXTRACTED CONTENT FROM UPLOADED FILES ===");
+    contextParts.push(
+      "(This content has been extracted from uploaded PDFs, images, spreadsheets, and documents)"
+    );
+
+    const filesWithContent = board.files.filter(
+      (file) => file.extractedContent && file.extractedContent.trim()
+    );
+    const filesWithoutContent = board.files.filter(
+      (file) => !file.extractedContent || !file.extractedContent.trim()
+    );
+
+    if (filesWithContent.length > 0) {
+      contextParts.push("FILES WITH EXTRACTED CONTENT:");
+      filesWithContent.forEach((file) => {
+        contextParts.push(`\n📄 FILE: ${file.name} (${file.type})`);
+        contextParts.push(
+          `📅 Uploaded: ${new Date(file.uploadedAt).toLocaleDateString()}`
+        );
+        contextParts.push(`📝 CONTENT:`);
+        contextParts.push(file.extractedContent!);
+        contextParts.push("─".repeat(50));
+      });
+    }
+
+    if (filesWithoutContent.length > 0) {
+      contextParts.push("\nFILES WITHOUT EXTRACTED CONTENT:");
+      filesWithoutContent.forEach((file) => {
+        contextParts.push(
+          `📄 ${file.name} (${file.type}) - Content extraction not available`
+        );
+      });
+    }
+
+    contextParts.push("=== END FILE CONTENT ===");
+  }
+
+  // Add recent conversation context with better organization
   if (recentMessages.length > 0) {
     contextParts.push("=== RECENT CONVERSATION ===");
-    recentMessages.reverse().forEach((msg) => {
-      contextParts.push(`${msg.authorName}: ${msg.content}`);
-    });
+    contextParts.push(
+      "(Most recent messages first - use this for conversation continuity)"
+    );
+
+    const conversationHistory = recentMessages
+      .reverse()
+      .map((msg, index) => {
+        const timestamp = new Date(msg.createdAt).toLocaleString();
+        const messageType = msg.type === "ai" ? "🤖 AI" : "👤 User";
+        return `${messageType} ${msg.authorName} [${timestamp}]: ${msg.content}`;
+      })
+      .join("\n\n");
+
+    contextParts.push(conversationHistory);
+    contextParts.push("=== END CONVERSATION HISTORY ===");
   }
 
   const context = contextParts.join("\n");
@@ -193,7 +392,7 @@ export async function askAI(
     revalidatePath(`/dashboard/${boardId}/discussion`);
     return { success: true };
   } catch (error) {
-    console.error("Error asking AI:", error);
+    // console.error("Error asking AI:", error);
     return { error: "Failed to get AI response" };
   }
 }
@@ -215,7 +414,7 @@ async function answerQuestion(
 
     const restrictionNote = allowExternalResources
       ? "You may use your general knowledge when the context doesn't contain sufficient information."
-      : "IMPORTANT: You must ONLY use the information provided in the context below. Do NOT use external knowledge or information not present in the context. If the context doesn't contain enough information to answer the question, clearly state this and explain what information is missing.";
+      : "IMPORTANT: You must ONLY use the information provided in the context below. Do NOT use external knowledge or information not present in the context. If the context doesn't contain enough information to answer the question, clearly state this but also mention what specific information you found and what might be missing from the extracted content.";
 
     const prompt = `You are MindMesh AI, an intelligent assistant helping users with their study materials and discussions.
 
@@ -226,23 +425,29 @@ ${context}
 
 User Question: ${question}
 
-Instructions:
+Instructions for responding:
 - ${
       allowExternalResources
         ? "Primarily use the provided context, but you may supplement with general knowledge if needed"
         : "STRICTLY use only the information provided in the context above"
     }
+- LINK CONTENT: Pay special attention to "LINKS WITH FETCHED CONTENT" section. This contains actual webpage content from links added to the board - use this information to provide detailed, accurate responses
+- CONVERSATION MEMORY: Pay special attention to the "RECENT CONVERSATION" section. Reference previous discussions when relevant to maintain conversation continuity
+- If the user refers to something discussed earlier (like "the numpy topic we talked about" or "that user ID you mentioned"), look for it in the recent conversation history
 - Use markdown formatting for better readability (headers, lists, code blocks, etc.)
 - If the question asks for code, provide it in proper code blocks with language syntax
 - For complex topics, break down your response with clear headings
 - ${
       allowExternalResources
         ? "If the context is insufficient, you may provide general guidance"
-        : "If the context doesn't contain relevant information, clearly state what specific information is missing from the board content"
+        : "If the context doesn't contain relevant information, clearly state what specific information is missing from the board content, but also describe what information IS available in the context"
     }
-- Match your response length to the complexity of the question (short for simple, detailed for complex)
-- Use bullet points, numbered lists, and formatting to make information digestible
-- When referencing information, mention which source it came from (e.g., "From the uploaded file 'document.pdf':", "From the note:", "From the link:")
+- When referencing fetched link content, mention the specific link title and URL (e.g., "According to the tutorial from 'C++ Arrays Guide' (https://example.com):")
+- When referencing extracted file content, mention the specific file name and type (e.g., "According to the PDF file 'report.pdf':", "From the Excel file 'data.xlsx':")
+- If you find relevant information in fetched web content, prioritize that information as it's specifically chosen by the user for this board
+- CONTENT PRIORITY: Use this order of importance: 1) Fetched web content from board links, 2) Extracted file content, 3) Board notes, 4) Conversation history
+- If the user asks you to create code or examples based on a tutorial link, use the actual fetched content from that link to provide accurate, up-to-date examples
+- If the fetched content seems incomplete or truncated (indicated by "content truncated"), mention this and suggest that the user might need to provide a more specific link or additional resources
 
 Please respond in markdown format:`;
 
@@ -250,7 +455,7 @@ Please respond in markdown format:`;
     const response = result.response;
     return response.text();
   } catch (error) {
-    console.error("AI question answering error:", error);
+    // console.error("AI question answering error:", error);
     return "I apologize, but I'm having trouble generating a response right now. Please try again in a moment.";
   }
 }
@@ -352,7 +557,7 @@ export async function summarizeDiscussion(
     revalidatePath(`/dashboard/${boardId}/discussion`);
     return { success: true };
   } catch (error) {
-    console.error("Error generating discussion summary:", error);
+    // console.error("Error generating discussion summary:", error);
     return { error: "Failed to generate discussion summary" };
   }
 }
@@ -400,7 +605,7 @@ Focus on extracting actionable insights and maintaining context for future refer
     const response = result.response;
     return response.text();
   } catch (error) {
-    console.error("Discussion summary generation error:", error);
+    // console.error("Discussion summary generation error:", error);
     return `## Discussion Summary (${timeFrame})\n\nI apologize, but I'm having trouble generating a summary right now. Please try again in a moment.`;
   }
 }

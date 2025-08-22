@@ -15,6 +15,7 @@ import {
   Bot,
   ChevronDown,
   ChevronUp,
+  Copy,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { deleteMessage } from "@/actions/discussions";
@@ -43,11 +44,11 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const isOwnMessage = message.authorId === currentUserId;
   const isAI = message.type === "ai";
   const canDelete = isOwnMessage && !isAI;
 
-  // Check if content is long enough to need accordion
   const isLongContent = message.content.length > 500;
   const shouldTruncate = isLongContent && !isExpanded;
 
@@ -56,6 +57,16 @@ export function MessageBubble({
     setIsDeleting(true);
     await deleteMessage(boardId, message.id);
     setIsDeleting(false);
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000); // Reset after 2 seconds
+    } catch (err) {
+      console.error("Failed to copy message:", err);
+    }
   }
 
   return (
@@ -96,14 +107,19 @@ export function MessageBubble({
               addSuffix: true,
             })}
           </span>
-          {canDelete && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6">
-                  <MoreHorizontal className="h-3 w-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+          {/* Always show dropdown for copy functionality */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="h-6 w-6">
+                <MoreHorizontal className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleCopy}>
+                <Copy className="h-4 w-4 mr-2" />
+                {isCopied ? "Copied!" : "Copy"}
+              </DropdownMenuItem>
+              {canDelete && (
                 <DropdownMenuItem
                   onClick={handleDelete}
                   disabled={isDeleting}
@@ -112,9 +128,9 @@ export function MessageBubble({
                   <Trash2 className="h-4 w-4 mr-2" />
                   {isDeleting ? "Deleting..." : "Delete"}
                 </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div
