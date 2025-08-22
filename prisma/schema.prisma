@@ -89,6 +89,11 @@ model Board {
   inviteToken    String?
   pendingInvites PendingInvite[]
 
+  // JSON data storage for extracted content
+  filesData Json? @map("files_data")
+  linksData Json? @map("links_data")
+  notesData Json? @map("notes_data")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

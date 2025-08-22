@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
-async function fetchWebpageContent(url: string): Promise<string> {
+export async function fetchWebpageContent(url: string): Promise<string> {
   try {
     const urlObj = new URL(url);
     if (!["http:", "https:"].includes(urlObj.protocol)) {
@@ -221,18 +221,13 @@ export async function askAI(
       id: boardId,
       OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
     },
-    include: {
-      notes: true,
-      links: true,
-      files: {
-        select: {
-          id: true,
-          name: true,
-          type: true,
-          extractedContent: true,
-          uploadedAt: true,
-        },
-      },
+    select: {
+      id: true,
+      title: true,
+      description: true,
+      filesData: true,
+      linksData: true,
+      notesData: true,
     },
   });
   if (!board) return { error: "Board not found or access denied" };
@@ -244,52 +239,45 @@ export async function askAI(
     take: 25,
   });
 
-  // Build comprehensive context including extracted file content
+  // Build comprehensive context using JSON data (faster and more complete)
   const contextParts = [
     `Board: ${board.title}`,
     `Description: ${board.description || ""}`,
   ];
 
-  // Add notes
-  if (board.notes.length > 0) {
+  // Add notes from JSON data
+  const notesData = (board.notesData as any[]) || [];
+  if (notesData.length > 0) {
     contextParts.push("=== NOTES ===");
-    board.notes.forEach((note) => {
-      contextParts.push(`Note: ${note.content}`);
+    notesData.forEach((note) => {
+      contextParts.push(`Note by ${note.authorName}: ${note.content}`);
     });
   }
 
-  // Add links with fetched content
-  if (board.links.length > 0) {
+  // Add links with fetched content from JSON data
+  const linksData = (board.linksData as any[]) || [];
+  if (linksData.length > 0) {
     contextParts.push("=== LINKS WITH FETCHED CONTENT ===");
     contextParts.push("(Content fetched from the actual webpages)");
 
-    for (const link of board.links) {
-      contextParts.push(`\n🔗 LINK: ${link.title}`);
-      contextParts.push(`📝 Description: ${link.description}`);
-      contextParts.push(`🌐 URL: ${link.url}`);
+    for (const linkData of linksData) {
+      contextParts.push(`\n🔗 LINK: ${linkData.title}`);
+      contextParts.push(`📝 Description: ${linkData.description}`);
+      contextParts.push(`🌐 URL: ${linkData.url}`);
+      contextParts.push(`👤 Added by: ${linkData.addedBy}`);
 
-      try {
-        const fetchedContent = await fetchWebpageContent(link.url);
-        if (fetchedContent && fetchedContent.length > 50) {
-          contextParts.push(`📄 FETCHED CONTENT:`);
-          const maxContentLength = 15000;
-          const limitedContent =
-            fetchedContent.length > maxContentLength
-              ? fetchedContent.substring(0, maxContentLength) +
-                "... [content truncated - for complete content, visit the link directly]"
-              : fetchedContent;
-          contextParts.push(limitedContent);
-        } else {
-          contextParts.push(
-            `❌ Could not fetch readable content from this link`
-          );
-        }
-      } catch (error) {
-        contextParts.push(
-          `❌ Error fetching content: ${
-            error instanceof Error ? error.message : "Unknown error"
-          }`
-        );
+      if (linkData.fetchedContent && linkData.fetchedContent.length > 50) {
+        contextParts.push(`📄 FETCHED CONTENT:`);
+        // For educational content, allow much more content to capture complete tutorials
+        const maxContentLength = 15000; // Increased from 5000 to capture complete educational content
+        const limitedContent =
+          linkData.fetchedContent.length > maxContentLength
+            ? linkData.fetchedContent.substring(0, maxContentLength) +
+              "... [content truncated - for complete content, visit the link directly]"
+            : linkData.fetchedContent;
+        contextParts.push(limitedContent);
+      } else {
+        contextParts.push(`❌ Could not fetch readable content from this link`);
       }
 
       contextParts.push("─".repeat(50));
@@ -298,40 +286,53 @@ export async function askAI(
     contextParts.push("=== END LINKS CONTENT ===");
   }
 
-  // Add extracted content from files (prioritized for detailed analysis)
-  if (board.files.length > 0) {
+  // Add extracted content from files using JSON data (faster and more complete)
+  const filesData = (board.filesData as any[]) || [];
+  if (filesData.length > 0) {
     contextParts.push("=== EXTRACTED CONTENT FROM UPLOADED FILES ===");
     contextParts.push(
       "(This content has been extracted from uploaded PDFs, images, spreadsheets, and documents)"
     );
 
-    const filesWithContent = board.files.filter(
-      (file) => file.extractedContent && file.extractedContent.trim()
+    const filesWithContent = filesData.filter(
+      (fileData) =>
+        fileData.extractedContent && fileData.extractedContent.trim()
     );
-    const filesWithoutContent = board.files.filter(
-      (file) => !file.extractedContent || !file.extractedContent.trim()
+    const filesWithoutContent = filesData.filter(
+      (fileData) =>
+        !fileData.extractedContent || !fileData.extractedContent.trim()
     );
 
     if (filesWithContent.length > 0) {
       contextParts.push("FILES WITH EXTRACTED CONTENT:");
-      filesWithContent.forEach((file) => {
-        contextParts.push(`\n📄 FILE: ${file.name} (${file.type})`);
+      filesWithContent.forEach((fileData) => {
         contextParts.push(
-          `📅 Uploaded: ${new Date(file.uploadedAt).toLocaleDateString()}`
+          `\n📄 FILE: ${fileData.fileName} (${fileData.fileType})`
         );
+        contextParts.push(
+          `📅 Uploaded: ${new Date(fileData.uploadedAt).toLocaleDateString()}`
+        );
+        contextParts.push(`👤 Uploaded by: ${fileData.uploadedBy}`);
+        contextParts.push(`📊 Size: ${Math.round(fileData.size / 1024)}KB`);
         contextParts.push(`📝 CONTENT:`);
-        contextParts.push(file.extractedContent!);
+        contextParts.push(fileData.extractedContent);
         contextParts.push("─".repeat(50));
       });
     }
 
     if (filesWithoutContent.length > 0) {
       contextParts.push("\nFILES WITHOUT EXTRACTED CONTENT:");
-      filesWithoutContent.forEach((file) => {
+      contextParts.push(
+        "(These files were uploaded but content extraction failed or is not supported)"
+      );
+      filesWithoutContent.forEach((fileData) => {
         contextParts.push(
-          `📄 ${file.name} (${file.type}) - Content extraction not available`
+          `📄 ${fileData.fileName} (${fileData.fileType}) - Content extraction failed or not supported for this file type`
         );
       });
+      contextParts.push(
+        "Note: Consider re-uploading these files or converting them to supported formats (PDF, DOCX, XLSX, TXT, or common image formats)."
+      );
     }
 
     contextParts.push("=== END FILE CONTENT ===");
@@ -410,7 +411,7 @@ async function answerQuestion(
 
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const restrictionNote = allowExternalResources
       ? "You may use your general knowledge when the context doesn't contain sufficient information."
@@ -440,7 +441,7 @@ Instructions for responding:
 - ${
       allowExternalResources
         ? "If the context is insufficient, you may provide general guidance"
-        : "If the context doesn't contain relevant information, clearly state what specific information is missing from the board content, but also describe what information IS available in the context"
+        : "If the context doesn't contain relevant information about the user's question, provide a helpful response that: 1) Clearly states the information is not available in the current board context, 2) Summarizes what content IS available on the board (notes, links, files), 3) Suggests how the user could add the needed information (upload relevant documents, add links to resources, create notes about the topic), 4) If there are unprocessed files, mention that some files may not have been fully processed yet"
     }
 - When referencing fetched link content, mention the specific link title and URL (e.g., "According to the tutorial from 'C++ Arrays Guide' (https://example.com):")
 - When referencing extracted file content, mention the specific file name and type (e.g., "According to the PDF file 'report.pdf':", "From the Excel file 'data.xlsx':")
@@ -448,6 +449,8 @@ Instructions for responding:
 - CONTENT PRIORITY: Use this order of importance: 1) Fetched web content from board links, 2) Extracted file content, 3) Board notes, 4) Conversation history
 - If the user asks you to create code or examples based on a tutorial link, use the actual fetched content from that link to provide accurate, up-to-date examples
 - If the fetched content seems incomplete or truncated (indicated by "content truncated"), mention this and suggest that the user might need to provide a more specific link or additional resources
+- When a user asks about a topic not covered in the board content, be helpful by: 1) Acknowledging the question, 2) Explaining what content is available on the board, 3) Suggesting specific ways they can add relevant information to get better assistance
+- If there are files that couldn't be processed (no extracted content), mention this and suggest re-uploading or using different file formats
 
 Please respond in markdown format:`;
 
@@ -574,7 +577,7 @@ async function generateDiscussionSummary(
 
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
     const prompt = `Please analyze and summarize the following discussion messages. Create a comprehensive summary in markdown format.
 
