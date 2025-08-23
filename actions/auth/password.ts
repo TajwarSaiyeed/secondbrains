@@ -32,17 +32,17 @@ export async function sendPasswordResetEmail(values: { email: string }) {
     });
 
     if (
-      process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS
+      process.env.EMAIL_SERVER_HOST &&
+      process.env.EMAIL_SERVER_USER &&
+      process.env.EMAIL_SERVER_PASSWORD
     ) {
       const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
+        host: process.env.EMAIL_SERVER_HOST,
         port: parseInt(process.env.SMTP_PORT || "587"),
         secure: process.env.SMTP_SECURE === "true",
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
+          user: process.env.EMAIL_SERVER_USER,
+          pass: process.env.EMAIL_SERVER_PASSWORD,
         },
       });
 
@@ -53,7 +53,7 @@ export async function sendPasswordResetEmail(values: { email: string }) {
       const resetUrl = `${baseUrl}/reset-password/${resetToken}`;
 
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: process.env.SMTP_FROM || process.env.EMAIL_SERVER_USER,
         to: email,
         subject: "Reset your MindMesh password",
         html: `
