@@ -2,6 +2,9 @@
   "name": "mindmesh-ai",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -13,7 +16,9 @@
     "docker:logs": "docker compose logs -f",
     "docker:migrate": "docker compose exec app npx prisma migrate deploy",
     "docker:reset": "docker compose down -v && docker compose up -d",
-    "docker:setup": "./setup-docker.sh"
+    "docker:restart": "docker compose restart app",
+    "docker:shell": "docker compose exec app sh",
+    "docker:db": "docker compose exec postgres psql -U USERNAME -d mindmeshdb"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

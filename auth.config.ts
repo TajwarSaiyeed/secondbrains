@@ -6,6 +6,7 @@ import { prisma } from "./lib/prisma";
 import { verifyPassword } from "./lib/auth-utils";
 
 export default {
+  trustHost: true,
   adapter: PrismaAdapter(prisma),
   providers: [
     Credentials({

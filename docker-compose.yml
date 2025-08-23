@@ -32,6 +32,7 @@ services:
     environment:
       DATABASE_URL: postgresql://USERNAME:PASSWORD@postgres:5432/mindmeshdb
       NODE_ENV: production
+      NEXTAUTH_URL: http://localhost:3000
     ports:
       - "3000:3000"
     volumes:

@@ -1,18 +1,16 @@
-FROM node:18-alpine AS base
-
-FROM base AS deps
+FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json bun.lockb* ./
 RUN \
   if [ -f bun.lockb ]; then \
-    npm install -g bun && bun install --frozen-lockfile; \
+  npm install -g bun && bun install --frozen-lockfile; \
   else \
-    npm ci; \
+  npm ci; \
   fi
 
-FROM base AS builder
+FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -20,21 +18,21 @@ COPY . .
 # Install bun in builder stage and generate Prisma client
 RUN \
   if [ -f bun.lockb ]; then \
-    npm install -g bun && bun prisma generate; \
+  npm install -g bun && bun prisma generate; \
   else \
-    npx prisma generate; \
+  npx prisma generate; \
   fi
 
 # Build the application
 RUN \
   if [ -f bun.lockb ]; then \
-    bun run build; \
+  bun run build; \
   else \
-    npm run build; \
+  npm run build; \
   fi
 
 # Production image, copy all the files and run next
-FROM base AS runner
+FROM node:20-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
@@ -57,6 +55,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 RUN mkdir -p uploads && chown nextjs:nodejs uploads
 
+COPY --chown=nextjs:nodejs start.sh /app/start.sh
+
+RUN chmod +x /app/start.sh
+
 USER nextjs
 
 EXPOSE 3000
@@ -64,4 +66,4 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["/app/start.sh"]
