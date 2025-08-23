@@ -1,38 +1,34 @@
+version: '3.8'
+
 services:
   postgres:
     image: postgres:15-alpine
     container_name: mindmesh-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: USERNAME
-      POSTGRES_PASSWORD: PASSWORD
+      POSTGRES_USER: REDUCTED
+      POSTGRES_PASSWORD: REDUCTED
       POSTGRES_DB: mindmeshdb
-      POSTGRES_HOST_AUTH_METHOD: trust
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - mindmesh-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U USERNAME -d mindmeshdb"]
+      test: ["CMD-SHELL", "pg_isready -U REDUCTED -d mindmeshdb"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # MindMesh Application
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: tajwarsaiyeed/mindmesh-app:latest
     container_name: mindmesh-app
     restart: unless-stopped
     env_file:
-      - .env.local 
+      - .env.local
     environment:
-      DATABASE_URL: postgresql://USERNAME:PASSWORD@postgres:5432/mindmeshdb
+      DATABASE_URL: postgresql://REDUCTED:REDUCTED@postgres:5432/mindmeshdb
       NODE_ENV: production
-      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_URL: REDUCTED
     ports:
       - "3000:3000"
     volumes:
