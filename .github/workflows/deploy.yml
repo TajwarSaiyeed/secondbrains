@@ -211,6 +211,18 @@ jobs:
             # Show status
             sudo docker compose ps
 
+            # Check container logs for any immediate errors
+            echo "🔍 Checking application logs..."
+            sudo docker compose logs app --tail=50
+
+            # Wait a bit for services to fully start
+            echo "⏳ Waiting for services to initialize..."
+            sleep 30
+
+            # Check if containers are still running
+            echo "📊 Final container status:"
+            sudo docker compose ps
+
             echo "✅ Deployment completed successfully!"
 
       - name: Health Check
