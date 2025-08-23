@@ -215,13 +215,26 @@ jobs:
             echo "🔍 Checking application logs..."
             sudo docker compose logs app --tail=50
 
-            # Wait a bit for services to fully start
-            echo "⏳ Waiting for services to initialize..."
+            # Wait a bit for containers to start
             sleep 30
 
-            # Check if containers are still running
+            # Comprehensive health checks
             echo "📊 Final container status:"
             sudo docker compose ps
+
+            echo "🔍 Checking if port 80 is available locally on EC2:"
+            sudo netstat -tlnp | grep :80 || echo "Port 80 not bound"
+
+            echo "🔍 Checking all listening ports:"
+            sudo netstat -tlnp | head -20
+
+            echo "🔍 Testing local connectivity on EC2:"
+            curl -s -o /dev/null -w "Local curl to localhost:80 = %{http_code}\n" http://localhost:80 || echo "Local connection failed"
+            curl -s -o /dev/null -w "Local curl to localhost:3000 = %{http_code}\n" http://localhost:3000 || echo "Local connection to 3000 failed"
+
+            echo "🔍 Docker network inspection:"
+            sudo docker network ls
+            sudo docker network inspect mindmesh_default || echo "Network not found"
 
             echo "✅ Deployment completed successfully!"
 
@@ -230,20 +243,40 @@ jobs:
           echo "⏳ Waiting for application to be ready..."
           sleep 60
 
+          # First, test basic connectivity to EC2
+          echo "🔍 Testing basic EC2 connectivity..."
+          if ping -c 3 ${{ secrets.EC2_HOST }}; then
+            echo "✅ EC2 is reachable"
+          else
+            echo "❌ EC2 is not reachable"
+          fi
+
+          # Test if port 80 is open
+          echo "🔍 Testing port 80 connectivity..."
+          if timeout 5 bash -c "</dev/tcp/${{ secrets.EC2_HOST }}/80"; then
+            echo "✅ Port 80 is open"
+          else
+            echo "❌ Port 80 is closed or filtered"
+          fi
+
           # Check if the application is responding
           health_url="http://${{ secrets.EC2_HOST }}/api/health"
           echo "Checking health endpoint: $health_url"
 
-          response=$(curl -s -o /dev/null -w "%{http_code}" "$health_url" || echo "000")
+          response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "$health_url" || echo "000")
 
           if [ "$response" = "200" ]; then
             echo "✅ Application is healthy and responding!"
             curl -s "$health_url" | jq '.' || echo "Health check passed"
           else
             echo "❌ Application health check failed (HTTP $response)"
-            echo "Trying root endpoint..."
-            root_response=$(curl -s -o /dev/null -w "%{http_code}" "http://${{ secrets.EC2_HOST }}" || echo "000")
+            echo "🔍 Trying root endpoint..."
+            root_response=$(curl -s -o /dev/null -w "%{http_code}" --connect-timeout 10 "http://${{ secrets.EC2_HOST }}" || echo "000")
             echo "Root endpoint response: $root_response"
+            
+            echo "🔍 Testing with verbose curl..."
+            curl -v --connect-timeout 10 "http://${{ secrets.EC2_HOST }}" || true
+            
             exit 1
           fi
 
