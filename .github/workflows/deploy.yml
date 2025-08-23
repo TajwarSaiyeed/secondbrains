@@ -8,7 +8,7 @@ on:
 
 env:
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/mindmesh
-  AWS_REGION: us-east-1
+  AWS_REGION: eu-north-1
   EC2_HOST: ${{ secrets.EC2_HOST }}
   EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
 
@@ -97,6 +97,9 @@ jobs:
           host: ${{ env.EC2_HOST }}
           username: ${{ env.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
           script: |
             # Create application directory
             sudo mkdir -p /opt/mindmesh
