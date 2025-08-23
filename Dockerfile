@@ -2,34 +2,26 @@ FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
+# Copy package files
 COPY package.json bun.lockb* ./
-RUN \
-  if [ -f bun.lockb ]; then \
-  npm install -g bun && bun install --frozen-lockfile; \
-  else \
-  npm ci; \
-  fi
+
+# Install Bun and dependencies
+RUN npm install -g bun
+RUN if [ -f bun.lockb ]; then bun install --frozen-lockfile; else npm ci; fi
 
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Install bun in builder stage and generate Prisma client
-RUN \
-  if [ -f bun.lockb ]; then \
-  npm install -g bun && bun prisma generate; \
-  else \
-  npx prisma generate; \
-  fi
+# Install Bun in builder stage
+RUN npm install -g bun
 
-# Build the application
-RUN \
-  if [ -f bun.lockb ]; then \
-  bun run build; \
-  else \
-  npm run build; \
-  fi
+# Generate Prisma client
+RUN bun prisma generate
+
+# Build the application  
+RUN bun run build
 
 # Production image, copy all the files and run next
 FROM node:20-alpine AS runner
