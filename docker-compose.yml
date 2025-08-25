@@ -3,30 +3,30 @@ version: '3.8'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: mindmesh-postgres
+    container_name: secondbrains-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: localUser
       POSTGRES_PASSWORD: localPassword123
-      POSTGRES_DB: mindmeshdb
+      POSTGRES_DB: secondbrainsdb
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - mindmesh-network
+      - secondbrains-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U localUser -d mindmeshdb"]
+      test: ["CMD-SHELL", "pg_isready -U localUser -d secondbrainsdb"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   app:
-    image: tajwarsaiyeed/mindmesh-app:latest
-    container_name: mindmesh-app
+    image: tajwarsaiyeed/secondbrains-app:latest
+    container_name: secondbrains-app
     restart: unless-stopped
     env_file:
       - .env.local
     environment:
-      DATABASE_URL: postgresql://localUser:localPassword123@postgres:5432/mindmeshdb
+      DATABASE_URL: postgresql://localUser:localPassword123@postgres:5432/secondbrainsdb
       NODE_ENV: production
       NEXTAUTH_URL: http://localhost:3000
     ports:
@@ -37,7 +37,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - mindmesh-network
+      - secondbrains-network
 
 volumes:
   postgres_data:
@@ -46,5 +46,5 @@ volumes:
     driver: local
 
 networks:
-  mindmesh-network:
+  secondbrains-network:
     driver: bridge
