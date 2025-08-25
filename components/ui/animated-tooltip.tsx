@@ -9,6 +9,7 @@ import {
   useSpring,
 } from "motion/react";
 import { StaticImageData } from "next/image";
+import Image from "next/image";
 
 export const AnimatedTooltip = ({
   items,
@@ -34,20 +35,23 @@ export const AnimatedTooltip = ({
     springConfig
   );
 
-  const handleMouseMove = (event: any) => {
+  const handleMouseMove = (event: React.MouseEvent<HTMLImageElement>) => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
 
     animationFrameRef.current = requestAnimationFrame(() => {
-      const halfWidth = event.target.offsetWidth / 2;
-      x.set(event.nativeEvent.offsetX - halfWidth);
+      const target = event.currentTarget as HTMLImageElement;
+      const rect = target.getBoundingClientRect();
+      const halfWidth = rect.width / 2;
+      const offsetX = event.clientX - rect.left;
+      x.set(offsetX - halfWidth);
     });
   };
 
   return (
     <>
-      {items.map((item, idx) => (
+      {items.map((item) => (
         <div
           className="group relative -mr-4"
           key={item.name}
@@ -85,11 +89,11 @@ export const AnimatedTooltip = ({
               </motion.div>
             )}
           </AnimatePresence>
-          <img
+          <Image
             onMouseMove={handleMouseMove}
             height={100}
             width={100}
-            src={item.image.src}
+            src={item.image}
             alt={item.name}
             className="relative !m-0 h-14 w-14 rounded-full border-2 border-white object-cover object-top !p-0 transition duration-500 group-hover:z-30 group-hover:scale-105"
           />

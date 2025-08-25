@@ -1,42 +1,36 @@
-FROM node:20-alpine AS deps
-RUN apk add --no-cache libc6-compat
+FROM node:20-alpine AS base
+RUN apk add --no-cache libc6-compat curl bash \
+    && npm install -g bun
 WORKDIR /app
 
-# Copy package files
+FROM base AS deps
+WORKDIR /app
+
 COPY package.json bun.lockb* ./
 
-# Install Bun and dependencies
-RUN npm install -g bun
-RUN if [ -f bun.lockb ]; then bun install --frozen-lockfile; else npm ci; fi
+RUN --mount=type=cache,target=/root/.bun \
+    if [ -f bun.lockb ]; then bun install --frozen-lockfile; else npm ci; fi
 
-FROM node:20-alpine AS builder
+FROM base AS builder
 WORKDIR /app
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Install Bun in builder stage
-RUN npm install -g bun
-
-# Generate Prisma client
 RUN bun prisma generate
 
-# Build the application  
 RUN bun run build
 
-# Production image, copy all the files and run next
 FROM node:20-alpine AS runner
 WORKDIR /app
-
 ENV NODE_ENV=production
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
 
-# Copy the public folder
 COPY --from=builder /app/public ./public
 
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+RUN mkdir .next && chown nextjs:nodejs .next
 
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
@@ -48,13 +42,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 RUN mkdir -p uploads && chown nextjs:nodejs uploads
 
 COPY --chown=nextjs:nodejs start.sh /app/start.sh
-
 RUN chmod +x /app/start.sh
 
 USER nextjs
 
 EXPOSE 3000
-
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
