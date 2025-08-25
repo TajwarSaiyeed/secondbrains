@@ -22,7 +22,9 @@ export default async function Navbar() {
           className="flex items-center gap-2"
         >
           <Brain className="h-8 w-8 text-primary" />
-          <span className="text-2xl font-bold text-foreground">MindMesh</span>
+          <span className="text-2xl font-bold text-foreground">
+            SecondBrains
+          </span>
         </Link>
 
         <div className="flex items-center gap-4">
@@ -32,7 +34,11 @@ export default async function Navbar() {
                 Welcome, {userName}
               </span>
               <Link href="/notifications">
-                <Button variant="ghost" size="icon" className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="relative cursor-pointer"
+                >
                   <Bell className="h-4 w-4" />
                   {unreadCount > 0 && (
                     <Badge
@@ -48,20 +54,25 @@ export default async function Navbar() {
                 </Button>
               </Link>
               <Link href="/profile">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="cursor-pointer">
                   <User className="h-4 w-4" />
                   <span className="sr-only">Profile</span>
                 </Button>
               </Link>
               <Link href="/settings">
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" className="cursor-pointer">
                   <Settings className="h-4 w-4" />
                   <span className="sr-only">Settings</span>
                 </Button>
               </Link>
               <ThemeToggle />
               <form action={logoutUser}>
-                <Button variant="ghost" size="icon" type="submit">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  type="submit"
+                  className="cursor-pointer"
+                >
                   <LogOut className="h-4 w-4" />
                   <span className="sr-only">Logout</span>
                 </Button>
@@ -71,10 +82,12 @@ export default async function Navbar() {
             <>
               <ThemeToggle />
               <Link href="/login">
-                <Button variant="ghost">Sign in</Button>
+                <Button variant="ghost" className="cursor-pointer">
+                  Sign in
+                </Button>
               </Link>
               <Link href="/register">
-                <Button>Get Started</Button>
+                <Button className="cursor-pointer">Get Started</Button>
               </Link>
             </>
           )}

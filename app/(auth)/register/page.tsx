@@ -25,7 +25,9 @@ export default async function RegisterPage({ searchParams }: PageProps) {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
             <Brain className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">MindMesh</span>
+            <span className="text-2xl font-bold text-foreground">
+              SecondBrains
+            </span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">
             Create your account
@@ -41,7 +43,7 @@ export default async function RegisterPage({ searchParams }: PageProps) {
           <CardHeader>
             <CardTitle>Sign up</CardTitle>
             <CardDescription>
-              Enter your information to create your MindMesh account
+              Enter your information to create your SecondBrains account
             </CardDescription>
           </CardHeader>
           <CardContent>

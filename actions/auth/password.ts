@@ -55,11 +55,11 @@ export async function sendPasswordResetEmail(values: { email: string }) {
       await transporter.sendMail({
         from: process.env.SMTP_FROM || process.env.EMAIL_SERVER_USER,
         to: email,
-        subject: "Reset your MindMesh password",
+        subject: "Reset your SecondBrains password",
         html: `
           <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: Arial, sans-serif;">
             <h2 style="color: #333; text-align: center;">Reset Your Password</h2>
-            <p>You requested a password reset for your MindMesh account.</p>
+            <p>You requested a password reset for your SecondBrains account.</p>
             <p>Click the link below to reset your password:</p>
             <div style="text-align: center; margin: 30px 0;">
               <a href="${resetUrl}" style="background-color: #0ea5e9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">Reset Password</a>

@@ -40,7 +40,7 @@ export function CreateBoardDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button className="gap-2 cursor-pointer">
           <Plus className="h-4 w-4" />
           Create New Board
         </Button>
@@ -86,10 +86,15 @@ export function CreateBoardDialog() {
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isLoading}
+              className="cursor-pointer dark:text-white dark:hover:text-rose-500 dark:hover:bg-transparent dark:hover:border-rose-500"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="cursor-pointer"
+            >
               {isLoading ? "Creating..." : "Create Board"}
             </Button>
           </div>

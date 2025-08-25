@@ -42,7 +42,7 @@ export function AddNoteForm({ boardId }: AddNoteFormProps) {
       <Button
         onClick={() => setIsOpen(true)}
         variant="outline"
-        className="w-full gap-2"
+        className="w-full gap-2 dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
       >
         <Plus className="h-4 w-4" />
         Add Note
@@ -80,6 +80,7 @@ export function AddNoteForm({ boardId }: AddNoteFormProps) {
               variant="outline"
               onClick={() => setIsOpen(false)}
               disabled={isLoading}
+              className="dark:text-white dark:hover:text-rose-500 dark:hover:bg-transparent dark:hover:border-rose-500"
             >
               Cancel
             </Button>

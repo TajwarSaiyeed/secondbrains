@@ -31,7 +31,10 @@ interface LoginFormProps {
   callbackUrl?: string;
 }
 
-export function LoginForm({ inviteToken, callbackUrl = "/" }: LoginFormProps) {
+export function LoginForm({
+  inviteToken,
+  callbackUrl = "/dashboard",
+}: LoginFormProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);

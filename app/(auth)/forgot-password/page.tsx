@@ -16,7 +16,9 @@ export default function ForgotPasswordPage() {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
             <Brain className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">MindMesh</span>
+            <span className="text-2xl font-bold text-foreground">
+              SecondBrains
+            </span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">
             Reset your password

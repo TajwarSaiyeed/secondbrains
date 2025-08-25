@@ -15,7 +15,7 @@ export async function fetchWebpageContent(url: string): Promise<string> {
     const response = await fetch(url, {
       method: "GET",
       headers: {
-        "User-Agent": "MindMesh-AI/1.0 (Educational Content Fetcher)",
+        "User-Agent": "SecondBrains-AI/1.0 (Educational Content Fetcher)",
         Accept:
           "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-US,en;q=0.5",
@@ -372,20 +372,18 @@ export async function askAI(
       },
     });
 
-    // Generate AI response
     const aiResponse = await answerQuestion(
       prompt,
       context,
       allowExternalResources
     );
 
-    // Save AI response
     await prisma.message.create({
       data: {
         boardId,
         content: aiResponse,
         authorId: "ai",
-        authorName: "MindMesh AI",
+        authorName: "SecondBrains AI",
         type: "ai",
       },
     });
@@ -393,7 +391,6 @@ export async function askAI(
     revalidatePath(`/dashboard/${boardId}/discussion`);
     return { success: true };
   } catch (error) {
-    // console.error("Error asking AI:", error);
     return { error: "Failed to get AI response" };
   }
 }
@@ -417,7 +414,7 @@ async function answerQuestion(
       ? "You may use your general knowledge when the context doesn't contain sufficient information."
       : "IMPORTANT: You must ONLY use the information provided in the context below. Do NOT use external knowledge or information not present in the context. If the context doesn't contain enough information to answer the question, clearly state this but also mention what specific information you found and what might be missing from the extracted content.";
 
-    const prompt = `You are MindMesh AI, an intelligent assistant helping users with their study materials and discussions.
+    const prompt = `You are SecondBrains AI, an intelligent assistant helping users with their study materials and discussions.
 
 ${restrictionNote}
 
@@ -553,7 +550,7 @@ export async function summarizeDiscussion(
         boardId,
         content: aiSummary,
         authorId: "ai",
-        authorName: "MindMesh AI",
+        authorName: "SecondBrains AI",
         type: "ai",
       },
     });

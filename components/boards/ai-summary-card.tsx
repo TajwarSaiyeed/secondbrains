@@ -56,7 +56,7 @@ export function AISummaryCard({ boardId, aiSummary }: AISummaryCardProps) {
             disabled={isGenerating}
             size="sm"
             variant="outline"
-            className="gap-2 bg-transparent"
+            className="gap-2 dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
           >
             <RefreshCw
               className={`h-4 w-4 ${isGenerating ? "animate-spin" : ""}`}

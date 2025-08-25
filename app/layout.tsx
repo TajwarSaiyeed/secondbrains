@@ -18,9 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MindMesh - AI-Powered Collaborative Study Platform",
+  title: "SecondBrains - AI-Powered Collaborative Study Platform",
   description:
     "Collaborate on study boards, share notes, and get AI-powered insights for better learning",
+  icons: {
+    icon: "/logo.jpg",
+  },
 };
 
 export default function RootLayout({

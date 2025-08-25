@@ -99,7 +99,10 @@ export function InviteUsersDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="gap-2 bg-transparent">
+        <Button
+          variant="outline"
+          className="gap-2 bg-transparent dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
+        >
           <UserPlus className="h-4 w-4" />
           Invite Users
         </Button>
@@ -180,7 +183,7 @@ export function InviteUsersDialog({
               <Button
                 variant="outline"
                 onClick={generateInviteLink}
-                className="w-full gap-2 bg-transparent"
+                className="w-full gap-2 bg-transparent dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
               >
                 <Copy className="h-4 w-4" />
                 Generate Invite Link
@@ -192,7 +195,7 @@ export function InviteUsersDialog({
                   variant="outline"
                   size="sm"
                   onClick={copyInviteLink}
-                  className="gap-1 bg-transparent"
+                  className="gap-1 bg-transparent dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
                 >
                   {linkCopied ? (
                     <>

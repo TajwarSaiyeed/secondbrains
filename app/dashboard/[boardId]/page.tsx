@@ -52,7 +52,7 @@ const BoardPage = async ({ params }: { params: Params }) => {
           <p className="text-muted-foreground">{board.description}</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline" size="sm">
+          <Button asChild variant="default" size="sm">
             <Link href={`/dashboard/${board.id}/discussion`}>Discussion</Link>
           </Button>
           <InviteUsersDialog boardId={board.id} boardTitle={board.title} />

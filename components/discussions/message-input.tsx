@@ -105,6 +105,7 @@ export function MessageInput({ boardId, onMessageSent }: MessageInputProps) {
             <div className="flex items-center gap-2">
               <Switch
                 id="external-resources"
+                className="dark:border-gray-700 border-primary bg-red-500"
                 checked={allowExternalResources}
                 onCheckedChange={setAllowExternalResources}
                 disabled={isLoading}

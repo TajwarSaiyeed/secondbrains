@@ -63,7 +63,11 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className="dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
+        >
           <Sparkles className="h-4 w-4 mr-2" />
           Summarize Discussion
         </Button>
@@ -87,6 +91,7 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
                 variant={summaryType === "days" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSummaryType("days")}
+                className="gap-1 dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
               >
                 <Calendar className="h-4 w-4 mr-1" />
                 Last X Days
@@ -95,6 +100,7 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
                 variant={summaryType === "dateRange" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSummaryType("dateRange")}
+                className="gap-1 dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
               >
                 <MessageSquare className="h-4 w-4 mr-1" />
                 Date Range
@@ -153,6 +159,7 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
             variant="outline"
             onClick={() => setOpen(false)}
             disabled={loading}
+            className="cursor-pointer dark:text-white dark:hover:text-rose-500 dark:hover:bg-transparent dark:hover:border-rose-500"
           >
             Cancel
           </Button>

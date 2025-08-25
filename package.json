@@ -1,5 +1,5 @@
 {
-  "name": "mindmesh-ai",
+  "name": "secondbrains-ai",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -18,7 +18,7 @@
     "docker:reset": "docker compose down -v && docker compose up -d",
     "docker:restart": "docker compose restart app",
     "docker:shell": "docker compose exec app sh",
-    "docker:db": "docker compose exec postgres psql -U USERNAME -d mindmeshdb"
+    "docker:db": "docker compose exec postgres psql -U USERNAME -d secondbrainsdb"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
@@ -63,6 +63,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.540.0",
     "mammoth": "^1.10.0",
+    "motion": "^12.23.12",
     "next": "15.5.0",
     "next-auth": "^5.0.0-beta.29",
     "next-themes": "^0.4.6",

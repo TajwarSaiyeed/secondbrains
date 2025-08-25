@@ -259,6 +259,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
           </p>
           <Label htmlFor="file-upload" className="cursor-pointer">
             <Button
+              className="gap-1 bg-transparent dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
               type="button"
               variant="outline"
               size="sm"

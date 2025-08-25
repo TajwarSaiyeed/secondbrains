@@ -27,13 +27,15 @@ export default async function LoginPage({ searchParams }: PageProps) {
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-2 mb-6">
             <Brain className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">MindMesh</span>
+            <span className="text-2xl font-bold text-foreground">
+              SecondBrains
+            </span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
           <p className="text-muted-foreground mt-2">
             {invite
               ? "Sign in to join the board"
-              : "Sign in to your MindMesh account"}
+              : "Sign in to your SecondBrains account"}
           </p>
         </div>
 
