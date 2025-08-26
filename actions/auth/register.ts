@@ -3,6 +3,7 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth-utils";
 import { RegisterFormValues, registerSchema } from "@/schema/auth-schema";
+import { claimPendingInvitesByEmail } from "@/actions/boards";
 
 export const registerUser = async (data: RegisterFormValues) => {
   try {
@@ -50,6 +51,12 @@ export const registerUser = async (data: RegisterFormValues) => {
         password: passwordHash,
       },
     });
+
+    try {
+      await claimPendingInvitesByEmail(user.id, user.email);
+    } catch (e) {
+      console.error("Failed to claim pending invites after register", e);
+    }
 
     const { password: _, ...userWithoutPassword } = user;
 
