@@ -5,7 +5,12 @@ import os from "os";
 export async function GET() {
   let dbStatus: "connected" | "disconnected" = "disconnected";
   let dbError: string | null = null;
-  let dbStats: any = null;
+  let dbStats: {
+    users?: number;
+    boards?: number;
+    notifications?: number;
+    error?: string;
+  } | null = null;
 
   try {
     // Check database connectivity by pinging it
@@ -22,7 +27,7 @@ export async function GET() {
         boards: boardCount,
         notifications: notificationCount,
       };
-    } catch (statsError) {
+    } catch {
       // Don't fail the health check if stats collection fails
       dbStats = { error: "Could not fetch stats" };
     }
