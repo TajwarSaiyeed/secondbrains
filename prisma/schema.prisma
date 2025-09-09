@@ -32,7 +32,6 @@ model User {
   notesAuthored        Note[]          @relation("NotesAuthored")
   linksAuthored        Link[]          @relation("LinksAuthored")
   filesUploaded        FileMeta[]      @relation("FilesUploaded")
-  messagesAuthored     Message[]       @relation("MessagesAuthored")
   aiSummariesGenerated AISummary[]     @relation("AISummariesGenerated")
   invitesSent          PendingInvite[] @relation("InvitesSent")
 
@@ -116,8 +115,7 @@ model Message {
   boardId    String      @db.ObjectId
   board      Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
   content    String
-  authorId   String      @db.ObjectId
-  author     User        @relation("MessagesAuthored", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId   String
   authorName String
   type       MessageType
   createdAt  DateTime    @default(now())
