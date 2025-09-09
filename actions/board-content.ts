@@ -162,11 +162,21 @@ export async function uploadFileWithQueue(
   if (!(file instanceof File)) return { error: "No file provided" };
 
   try {
+    // Check if Vercel Blob Storage is available
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!blobToken) {
+      return {
+        error:
+          "File upload is not configured. Please set up Vercel Blob Storage or configure BLOB_READ_WRITE_TOKEN environment variable.",
+      };
+    }
+
     // Upload to Vercel Blob Storage
     const { put } = await import("@vercel/blob");
     const filename = `${boardId}/${Date.now()}-${file.name}`;
     const blob = await put(filename, file, {
       access: "public",
+      token: blobToken,
     });
 
     // Create database record
@@ -237,6 +247,15 @@ export async function uploadFiles(
   if (!files || files.length === 0) return { error: "No files provided" };
 
   try {
+    // Check if Vercel Blob Storage is available
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    if (!blobToken) {
+      return {
+        error:
+          "File upload is not configured. Please set up Vercel Blob Storage or configure BLOB_READ_WRITE_TOKEN environment variable.",
+      };
+    }
+
     const { put } = await import("@vercel/blob");
 
     let saved = 0;
@@ -246,6 +265,7 @@ export async function uploadFiles(
       const filename = `${boardId}/${Date.now()}-${(f as File).name}`;
       const blob = await put(filename, f as File, {
         access: "public",
+        token: blobToken,
       });
 
       await prisma.fileMeta.create({
@@ -321,9 +341,12 @@ export async function deleteFile(boardId: string, fileId: string) {
   if (!file) return { error: "File not found or access denied" };
 
   try {
-    // Delete from Vercel Blob Storage
-    const { del } = await import("@vercel/blob");
-    await del(file.url);
+    // Delete from Vercel Blob Storage if token is available
+    const blobToken = process.env.BLOB_READ_WRITE_TOKEN;
+    if (blobToken) {
+      const { del } = await import("@vercel/blob");
+      await del(file.url, { token: blobToken });
+    }
   } catch (e) {
     // ignore deletion error from blob storage; continue to remove metadata
     console.warn("Failed to delete file from blob storage:", e);
