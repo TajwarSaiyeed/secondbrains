@@ -24,10 +24,17 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  accounts      Account[]
-  sessions      Session[]
-  notifications Notification[]
-  boardsOwned   Board[]        @relation("BoardsOwned")
+  accounts             Account[]
+  sessions             Session[]
+  notifications        Notification[]
+  boardsOwned          Board[]         @relation("BoardsOwned")
+  boardMemberships     BoardMember[]   @relation("BoardMemberships")
+  notesAuthored        Note[]          @relation("NotesAuthored")
+  linksAuthored        Link[]          @relation("LinksAuthored")
+  filesUploaded        FileMeta[]      @relation("FilesUploaded")
+  messagesAuthored     Message[]       @relation("MessagesAuthored")
+  aiSummariesGenerated AISummary[]     @relation("AISummariesGenerated")
+  invitesSent          PendingInvite[] @relation("InvitesSent")
 
   @@map("users")
 }
@@ -110,11 +117,13 @@ model Message {
   board      Board       @relation(fields: [boardId], references: [id], onDelete: Cascade)
   content    String
   authorId   String      @db.ObjectId
+  author     User        @relation("MessagesAuthored", fields: [authorId], references: [id], onDelete: Cascade)
   authorName String
   type       MessageType
   createdAt  DateTime    @default(now())
 
   @@index([boardId])
+  @@index([authorId])
   @@map("messages")
 }
 
@@ -165,6 +174,7 @@ model BoardMember {
   boardId  String    @db.ObjectId
   board    Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
   userId   String    @db.ObjectId
+  user     User      @relation("BoardMemberships", fields: [userId], references: [id], onDelete: Cascade)
   name     String
   email    String
   role     BoardRole
@@ -181,6 +191,7 @@ model Note {
   board          Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   content        String
   authorId       String   @db.ObjectId
+  author         User     @relation("NotesAuthored", fields: [authorId], references: [id], onDelete: Cascade)
   authorName     String
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -200,6 +211,7 @@ model Link {
   title       String
   description String
   authorId    String   @db.ObjectId
+  author      User     @relation("LinksAuthored", fields: [authorId], references: [id], onDelete: Cascade)
   authorName  String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -216,8 +228,9 @@ model FileMeta {
   name             String
   size             Int
   type             String
-  url              String // Vercel Blob Storage URL
+  url              String
   uploadedBy       String   @db.ObjectId
+  uploader         User     @relation("FilesUploaded", fields: [uploadedBy], references: [id], onDelete: Cascade)
   uploadedAt       DateTime @default(now())
   extractedContent String?
 
@@ -232,9 +245,11 @@ model AISummary {
   board       Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   content     String
   generatedAt DateTime @default(now())
-  generatedBy String
+  generatedBy String   @db.ObjectId
+  generator   User     @relation("AISummariesGenerated", fields: [generatedBy], references: [id], onDelete: Cascade)
 
   @@index([boardId])
+  @@index([generatedBy])
   @@map("ai_summaries")
 }
 
@@ -244,10 +259,12 @@ model PendingInvite {
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   email     String
   invitedBy String   @db.ObjectId
+  inviter   User     @relation("InvitesSent", fields: [invitedBy], references: [id], onDelete: Cascade)
   invitedAt DateTime @default(now())
   message   String?
 
   @@index([boardId])
   @@index([email])
+  @@index([invitedBy])
   @@map("pending_invites")
 }

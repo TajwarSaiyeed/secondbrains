@@ -187,7 +187,7 @@ export async function uploadFileWithQueue(
         size: file.size,
         type: file.type || "application/octet-stream",
         url: blob.url,
-        uploadedBy: user.name || user.email || user.id,
+        uploadedBy: user.id,
       },
     });
 
@@ -211,7 +211,7 @@ export async function uploadFileWithQueue(
       fileName: file.name,
       fileType: file.type || "application/octet-stream",
       extractedContent: extractedContent || "",
-      uploadedBy: user.name || user.email || user.id,
+      uploadedBy: user.name || user.email || "Unknown User",
       uploadedAt: new Date().toISOString(),
       size: file.size,
     });
@@ -275,7 +275,7 @@ export async function uploadFiles(
           size: (f as File).size,
           type: (f as File).type || "application/octet-stream",
           url: blob.url,
-          uploadedBy: user.name || user.email || user.id,
+          uploadedBy: user.id,
         },
       });
       saved += 1;
