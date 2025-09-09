@@ -4,8 +4,6 @@ import "server-only";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
-import fs from "fs";
-import path from "path";
 
 export type ActionResult = { success: true } | { error: string };
 
@@ -163,37 +161,41 @@ export async function uploadFileWithQueue(
   const file = formData.get("file");
   if (!(file instanceof File)) return { error: "No file provided" };
 
-  const uploadRoot = path.join(process.cwd(), "uploads", boardId);
-  fs.mkdirSync(uploadRoot, { recursive: true });
-
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    // Upload to Vercel Blob Storage
+    const { put } = await import("@vercel/blob");
+    const filename = `${boardId}/${Date.now()}-${file.name}`;
+    const blob = await put(filename, file, {
+      access: "public",
+    });
+
+    // Create database record
     const record = await prisma.fileMeta.create({
       data: {
         boardId,
         name: file.name,
         size: file.size,
         type: file.type || "application/octet-stream",
+        url: blob.url,
         uploadedBy: user.name || user.email || user.id,
       },
     });
 
-    const filePath = path.join(uploadRoot, `${record.id}_${file.name}`);
-    fs.writeFileSync(filePath, buffer);
-
-    const extractedContent = await extractFileContent({
+    // Extract content from the uploaded file
+    const extractedContent = await extractFileContentFromBlob({
       id: record.id,
       name: file.name,
       type: file.type || "application/octet-stream",
-      boardId,
+      url: blob.url,
     });
 
+    // Update the record with extracted content
     await prisma.fileMeta.update({
       where: { id: record.id },
       data: { extractedContent: extractedContent?.slice(0, 4000) || null },
     });
 
+    // Update board's files JSON data
     await updateBoardFilesData(boardId, {
       fileId: record.id,
       fileName: file.name,
@@ -234,29 +236,36 @@ export async function uploadFiles(
   const files = formData.getAll("files");
   if (!files || files.length === 0) return { error: "No files provided" };
 
-  const uploadRoot = path.join(process.cwd(), "uploads", boardId);
-  fs.mkdirSync(uploadRoot, { recursive: true });
+  try {
+    const { put } = await import("@vercel/blob");
 
-  let saved = 0;
-  for (const f of files) {
-    if (!(f instanceof File)) continue;
-    const arrayBuffer = await (f as File).arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const record = await prisma.fileMeta.create({
-      data: {
-        boardId,
-        name: (f as File).name,
-        size: (f as File).size,
-        type: (f as File).type || "application/octet-stream",
-        uploadedBy: user.name || user.email || user.id,
-      },
-    });
-    const filePath = path.join(uploadRoot, `${record.id}_${(f as File).name}`);
-    fs.writeFileSync(filePath, buffer);
-    saved += 1;
+    let saved = 0;
+    for (const f of files) {
+      if (!(f instanceof File)) continue;
+
+      const filename = `${boardId}/${Date.now()}-${(f as File).name}`;
+      const blob = await put(filename, f as File, {
+        access: "public",
+      });
+
+      await prisma.fileMeta.create({
+        data: {
+          boardId,
+          name: (f as File).name,
+          size: (f as File).size,
+          type: (f as File).type || "application/octet-stream",
+          url: blob.url,
+          uploadedBy: user.name || user.email || user.id,
+        },
+      });
+      saved += 1;
+    }
+    revalidatePath(`/dashboard/${boardId}`);
+    return { success: true, count: saved };
+  } catch (error) {
+    console.error("File upload error:", error);
+    return { error: "Failed to upload files" };
   }
-  revalidatePath(`/dashboard/${boardId}`);
-  return { success: true, count: saved };
 }
 
 export async function downloadFile(
@@ -277,19 +286,23 @@ export async function downloadFile(
   });
   if (!file) return { error: "File not found or access denied" };
 
-  const filePath = path.join(
-    process.cwd(),
-    "uploads",
-    file.boardId,
-    `${file.id}_${file.name}`
-  );
-  if (!fs.existsSync(filePath)) return { error: "File content missing" };
-  const data = fs.readFileSync(filePath);
-  return {
-    base64: data.toString("base64"),
-    contentType: file.type,
-    filename: file.name,
-  };
+  try {
+    // Fetch file from Vercel Blob Storage
+    const response = await fetch(file.url);
+    if (!response.ok) return { error: "File content missing" };
+
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    return {
+      base64: buffer.toString("base64"),
+      contentType: file.type,
+      filename: file.name,
+    };
+  } catch (error) {
+    console.error("Download error:", error);
+    return { error: "Failed to download file" };
+  }
 }
 
 export async function deleteFile(boardId: string, fileId: string) {
@@ -307,16 +320,13 @@ export async function deleteFile(boardId: string, fileId: string) {
   });
   if (!file) return { error: "File not found or access denied" };
 
-  const filePath = path.join(
-    process.cwd(),
-    "uploads",
-    file.boardId,
-    `${file.id}_${file.name}`
-  );
   try {
-    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    // Delete from Vercel Blob Storage
+    const { del } = await import("@vercel/blob");
+    await del(file.url);
   } catch (e) {
-    // ignore deletion error of fs; continue to remove metadata
+    // ignore deletion error from blob storage; continue to remove metadata
+    console.warn("Failed to delete file from blob storage:", e);
   }
 
   await prisma.fileMeta.delete({ where: { id: fileId } });
@@ -369,91 +379,26 @@ export async function generateAISummary(
     const meta = await prisma.fileMeta.findUnique({ where: { id: f.id } });
     if (meta?.extractedContent) return meta.extractedContent;
 
-    const filePath = path.join(
-      process.cwd(),
-      "uploads",
-      f.boardId,
-      `${f.id}_${f.name}`
-    );
-    if (!fs.existsSync(filePath)) return "";
+    // Extract from blob storage
+    if (meta?.url) {
+      const text = await extractFileContentFromBlob({
+        id: f.id,
+        name: f.name,
+        type: f.type,
+        url: meta.url,
+      });
 
-    const buffer = fs.readFileSync(filePath);
-    const ext = f.name.toLowerCase();
-    const mime = f.type || "";
-    let text = "";
-
-    try {
-      if (mime.startsWith("text/") || ext.endsWith(".txt")) {
-        text = buffer.toString("utf8");
-      } else if (ext.endsWith(".pdf")) {
-        const pdfParse = await import("pdf-parse/lib/pdf-parse.js");
-        const pdfFn = (pdfParse as any).default || pdfParse;
-        const data = await pdfFn(buffer);
-        text = data.text || "";
-      } else if (ext.endsWith(".docx") || ext.endsWith(".doc")) {
-        const mammoth = await import("mammoth");
-        const res = await mammoth.extractRawText({ buffer });
-        text = res.value || "";
-      } else if (ext.endsWith(".csv")) {
-        const Papa = await import("papaparse");
-        const csv = buffer.toString("utf8");
-        const parsed = Papa.parse(csv, { delimiter: ",", newline: "\n" });
-        const rows = (parsed.data as string[][])
-          .slice(0, 10)
-          .map((r) => r.join(", "))
-          .join("\n");
-        text = rows;
-      } else if (ext.endsWith(".xlsx")) {
-        const XLSX = await import("xlsx");
-        const wb = XLSX.read(buffer, { type: "buffer" });
-        const firstSheet = wb.SheetNames[0];
-        if (firstSheet) {
-          const sheet = wb.Sheets[firstSheet];
-          const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-          text = (data as string[][])
-            .slice(0, 10)
-            .map((r) => r.join(", "))
-            .join("\n");
-        }
-      } else if (
-        mime.startsWith("image/") ||
-        ext.match(/\.(png|jpe?g|gif|bmp|tiff|webp)$/)
-      ) {
-        // Use Gemini API for OCR instead of Tesseract to avoid worker issues
-        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-        if (apiKey) {
-          const { GoogleGenerativeAI } = await import("@google/generative-ai");
-          const genAI = new GoogleGenerativeAI(apiKey);
-          const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-          const imagePart = {
-            inlineData: {
-              mimeType: mime.startsWith("image/") ? mime : "image/png",
-              data: buffer.toString("base64"),
-            },
-          };
-
-          const prompt =
-            "Extract all readable text from this image. Return only the text content, preserving line breaks.";
-          const result = await model.generateContent([prompt, imagePart]);
-          text = result.response.text().trim();
-        } else {
-          text = "[Image OCR unavailable: missing GEMINI_API_KEY]";
-        }
-      }
-    } catch (error) {
-      console.error(`Error extracting content from ${f.name}:`, error);
-      text = `[Error extracting content from ${f.name}]`;
+      const snippet = text.trim().slice(0, 4000);
+      try {
+        await prisma.fileMeta.update({
+          where: { id: f.id },
+          data: { extractedContent: snippet },
+        });
+      } catch {}
+      return snippet;
     }
 
-    const snippet = text.trim().slice(0, 4000);
-    try {
-      await prisma.fileMeta.update({
-        where: { id: f.id },
-        data: { extractedContent: snippet },
-      });
-    } catch {}
-    return snippet;
+    return "";
   }
 
   // Detailed file analysis for better summaries
@@ -543,91 +488,115 @@ Format as markdown with clear headings and bullet points. Be concise but specifi
   return { success: true };
 }
 
-// Helper function to extract content from a file
+// Helper function to extract content from a file stored in Vercel Blob Storage
+async function extractFileContentFromBlob(f: {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+}): Promise<string> {
+  try {
+    // Fetch file from Vercel Blob Storage
+    const response = await fetch(f.url);
+    if (!response.ok) return "";
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const ext = f.name.toLowerCase();
+    const mime = f.type || "";
+    let text = "";
+
+    try {
+      if (mime.startsWith("text/") || ext.endsWith(".txt")) {
+        text = buffer.toString("utf8");
+      } else if (ext.endsWith(".pdf")) {
+        const pdfParse = await import("pdf-parse/lib/pdf-parse.js");
+        const pdfFn = (pdfParse as any).default || pdfParse;
+        const data = await pdfFn(buffer);
+        text = data.text || "";
+      } else if (ext.endsWith(".docx") || ext.endsWith(".doc")) {
+        const mammoth = await import("mammoth");
+        const res = await mammoth.extractRawText({ buffer });
+        text = res.value || "";
+      } else if (ext.endsWith(".csv")) {
+        const Papa = await import("papaparse");
+        const csv = buffer.toString("utf8");
+        const parsed = Papa.parse(csv, { delimiter: ",", newline: "\n" });
+        const rows = (parsed.data as string[][])
+          .slice(0, 10)
+          .map((r) => r.join(", "))
+          .join("\n");
+        text = rows;
+      } else if (ext.endsWith(".xlsx")) {
+        const XLSX = await import("xlsx");
+        const wb = XLSX.read(buffer, { type: "buffer" });
+        const firstSheet = wb.SheetNames[0];
+        if (firstSheet) {
+          const sheet = wb.Sheets[firstSheet];
+          const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+          text = (data as string[][])
+            .slice(0, 10)
+            .map((r) => r.join(", "))
+            .join("\n");
+        }
+      } else if (
+        mime.startsWith("image/") ||
+        ext.match(/\.(png|jpe?g|gif|bmp|tiff|webp)$/)
+      ) {
+        // Use Gemini API for OCR
+        const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+        if (apiKey) {
+          const { GoogleGenerativeAI } = await import("@google/generative-ai");
+          const genAI = new GoogleGenerativeAI(apiKey);
+          const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+          const imagePart = {
+            inlineData: {
+              mimeType: mime.startsWith("image/") ? mime : "image/png",
+              data: buffer.toString("base64"),
+            },
+          };
+
+          const prompt =
+            "Extract all readable text from this image. Return only the text content, preserving line breaks.";
+          const result = await model.generateContent([prompt, imagePart]);
+          text = result.response.text().trim();
+        } else {
+          text = "[Image OCR unavailable: missing GEMINI_API_KEY]";
+        }
+      }
+    } catch (error) {
+      console.error(`Error extracting content from ${f.name}:`, error);
+      text = `[Error extracting content from ${f.name}]`;
+    }
+
+    return text.trim().slice(0, 8000); // Increased limit for JSON storage
+  } catch (error) {
+    console.error(`Error fetching file ${f.name} from blob storage:`, error);
+    return `[Error fetching file from storage]`;
+  }
+}
+
+// Helper function to extract content from a file (legacy function - updated to use blob storage)
 async function extractFileContent(f: {
   id: string;
   name: string;
   type: string;
   boardId: string;
 }): Promise<string> {
-  const filePath = path.join(
-    process.cwd(),
-    "uploads",
-    f.boardId,
-    `${f.id}_${f.name}`
-  );
-  if (!fs.existsSync(filePath)) return "";
+  // Get the file URL from database
+  const fileMeta = await prisma.fileMeta.findUnique({
+    where: { id: f.id },
+    select: { url: true },
+  });
 
-  const buffer = fs.readFileSync(filePath);
-  const ext = f.name.toLowerCase();
-  const mime = f.type || "";
-  let text = "";
+  if (!fileMeta?.url) return "";
 
-  try {
-    if (mime.startsWith("text/") || ext.endsWith(".txt")) {
-      text = buffer.toString("utf8");
-    } else if (ext.endsWith(".pdf")) {
-      const pdfParse = await import("pdf-parse/lib/pdf-parse.js");
-      const pdfFn = (pdfParse as any).default || pdfParse;
-      const data = await pdfFn(buffer);
-      text = data.text || "";
-    } else if (ext.endsWith(".docx") || ext.endsWith(".doc")) {
-      const mammoth = await import("mammoth");
-      const res = await mammoth.extractRawText({ buffer });
-      text = res.value || "";
-    } else if (ext.endsWith(".csv")) {
-      const Papa = await import("papaparse");
-      const csv = buffer.toString("utf8");
-      const parsed = Papa.parse(csv, { delimiter: ",", newline: "\n" });
-      const rows = (parsed.data as string[][])
-        .slice(0, 10)
-        .map((r) => r.join(", "))
-        .join("\n");
-      text = rows;
-    } else if (ext.endsWith(".xlsx")) {
-      const XLSX = await import("xlsx");
-      const wb = XLSX.read(buffer, { type: "buffer" });
-      const firstSheet = wb.SheetNames[0];
-      if (firstSheet) {
-        const sheet = wb.Sheets[firstSheet];
-        const data = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-        text = (data as string[][])
-          .slice(0, 10)
-          .map((r) => r.join(", "))
-          .join("\n");
-      }
-    } else if (
-      mime.startsWith("image/") ||
-      ext.match(/\.(png|jpe?g|gif|bmp|tiff|webp)$/)
-    ) {
-      // Use Gemini API for OCR
-      const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
-      if (apiKey) {
-        const { GoogleGenerativeAI } = await import("@google/generative-ai");
-        const genAI = new GoogleGenerativeAI(apiKey);
-        const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-        const imagePart = {
-          inlineData: {
-            mimeType: mime.startsWith("image/") ? mime : "image/png",
-            data: buffer.toString("base64"),
-          },
-        };
-
-        const prompt =
-          "Extract all readable text from this image. Return only the text content, preserving line breaks.";
-        const result = await model.generateContent([prompt, imagePart]);
-        text = result.response.text().trim();
-      } else {
-        text = "[Image OCR unavailable: missing GEMINI_API_KEY]";
-      }
-    }
-  } catch (error) {
-    console.error(`Error extracting content from ${f.name}:`, error);
-    text = `[Error extracting content from ${f.name}]`;
-  }
-
-  return text.trim().slice(0, 8000); // Increased limit for JSON storage
+  return extractFileContentFromBlob({
+    id: f.id,
+    name: f.name,
+    type: f.type,
+    url: fileMeta.url,
+  });
 }
 
 // Helper function to update board's files JSON data

@@ -216,6 +216,7 @@ model FileMeta {
   name             String
   size             Int
   type             String
+  url              String // Vercel Blob Storage URL
   uploadedBy       String   @db.ObjectId
   uploadedAt       DateTime @default(now())
   extractedContent String?
