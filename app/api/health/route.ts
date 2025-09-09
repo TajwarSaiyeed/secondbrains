@@ -4,7 +4,10 @@ import { prisma } from "@/lib/prisma";
 export async function GET() {
   try {
     // Check database connectivity
-    await prisma.$queryRaw`SELECT 1`;
+    // await prisma.$queryRaw`SELECT 1`;
+
+    // Check database connectivity by pinging it
+    await prisma.$runCommandRaw({ ping: 1 });
 
     // Check system info
     const healthInfo = {
