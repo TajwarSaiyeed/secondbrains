@@ -380,7 +380,6 @@ export async function inviteUsers(
         invitedBy: user.id,
         message,
       })),
-      skipDuplicates: true,
     });
   }
 
