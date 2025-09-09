@@ -61,12 +61,18 @@ export default {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.name = user.name;
+        token.email = user.email;
+        token.picture = user.image;
       }
       return token;
     },
-    async session({ session, token }) {
-      if (token) {
+    async session({ token, session }) {
+      if (token.id && session.user) {
         session.user.id = token.id as string;
+        if (token.name) session.user.name = token.name as string;
+        if (token.email) session.user.email = token.email as string;
+        if (token.picture) session.user.image = token.picture as string;
       }
       return session;
     },
