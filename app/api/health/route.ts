@@ -19,9 +19,11 @@ export async function GET() {
 
     // Get database stats
     try {
-      const userCount = await prisma.user.count();
-      const boardCount = await prisma.board.count();
-      const notificationCount = await prisma.notification.count();
+      const [userCount, boardCount, notificationCount] = await Promise.all([
+        prisma.user.count(),
+        prisma.board.count(),
+        prisma.notification.count(),
+      ]);
       dbStats = {
         users: userCount,
         boards: boardCount,
