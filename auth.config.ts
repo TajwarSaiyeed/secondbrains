@@ -5,6 +5,10 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "./lib/prisma";
 import { verifyPassword } from "./lib/auth-utils";
 
+function isValidObjectId(id: string): boolean {
+  return /^[0-9a-fA-F]{24}$/.test(id);
+}
+
 export default {
   trustHost: true,
   adapter: PrismaAdapter(prisma),
@@ -60,15 +64,24 @@ export default {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.name = user.name;
-        token.email = user.email;
-        token.picture = user.image;
+        if (user.id && isValidObjectId(user.id)) {
+          token.id = user.id;
+          token.name = user.name;
+          token.email = user.email;
+          token.picture = user.image;
+        } else {
+          return null;
+        }
       }
+
+      if (token.id && !isValidObjectId(token.id as string)) {
+        return null;
+      }
+
       return token;
     },
     async session({ token, session }) {
-      if (token.id && session.user) {
+      if (token.id && session.user && isValidObjectId(token.id as string)) {
         session.user.id = token.id as string;
         if (token.name) session.user.name = token.name as string;
         if (token.email) session.user.email = token.email as string;
