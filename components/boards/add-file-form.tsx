@@ -30,6 +30,7 @@ interface QueuedFile {
   status: "waiting" | "uploading" | "processing" | "completed" | "error";
   progress: number;
   error?: string;
+  isLargeFile?: boolean;
 }
 
 export function AddFileForm({ boardId }: { boardId: string }) {
@@ -40,6 +41,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const MAX_FILES = 3; // Limit to 3 files at a time
+  const LARGE_IMAGE_THRESHOLD = 4.5 * 1024 * 1024; // 4.5 MB
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
@@ -88,6 +90,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
       id: Math.random().toString(36).substr(2, 9),
       status: "waiting",
       progress: 0,
+      isLargeFile: file.size > LARGE_IMAGE_THRESHOLD,
     }));
 
     setQueuedFiles((prev) => [...prev, ...newQueuedFiles]);
@@ -98,6 +101,12 @@ export function AddFileForm({ boardId }: { boardId: string }) {
         `Only ${filesToAdd.length} files added. Maximum ${MAX_FILES} files can be uploaded at once.`
       );
     }
+  };
+
+  const buildFormDataForFile = (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return fd;
   };
 
   const removeFile = (id: string) => {
@@ -121,12 +130,10 @@ export function AddFileForm({ boardId }: { boardId: string }) {
         // Update to uploading status
         updateFileStatus(queuedFile.id, { status: "uploading", progress: 25 });
 
-        // Create FormData for this specific file
-        const formData = new FormData();
-        formData.append("file", queuedFile.file);
+        const formData = buildFormDataForFile(queuedFile.file);
 
-        // Call upload action
         updateFileStatus(queuedFile.id, { status: "processing", progress: 75 });
+
         const result: FileUploadResult = await uploadFileWithQueue(
           boardId,
           formData
@@ -204,6 +211,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
       case "uploading":
         return "Uploading...";
       case "processing":
+        if (queuedFile.isLargeFile) return "Uploading large file";
         return "Extracting content...";
       case "completed":
         return "Complete!";
