@@ -39,7 +39,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const MAX_FILES = 3; // Limit to 3 files at a time
+  const MAX_FILES = 30; // Limit to 30 files at a time
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
