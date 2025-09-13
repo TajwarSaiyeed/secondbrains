@@ -34,6 +34,7 @@ model User {
   filesUploaded        FileMeta[]      @relation("FilesUploaded")
   aiSummariesGenerated AISummary[]     @relation("AISummariesGenerated")
   invitesSent          PendingInvite[] @relation("InvitesSent")
+  answersMarked        Answer[]        @relation("AnswersMarked")
 
   @@map("users")
 }
@@ -103,6 +104,7 @@ model Board {
   updatedAt DateTime @updatedAt
 
   messages Message[]
+  answers  Answer[]  @relation("BoardAnswers")
 
   @@index([ownerId])
   @@index([inviteToken])
@@ -119,6 +121,7 @@ model Message {
   authorName String
   type       MessageType
   createdAt  DateTime    @default(now())
+  answers    Answer[]    @relation("MessageAnswers")
 
   @@index([boardId])
   @@index([authorId])
@@ -265,4 +268,19 @@ model PendingInvite {
   @@index([email])
   @@index([invitedBy])
   @@map("pending_invites")
+}
+
+model Answer {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  boardId    String   @db.ObjectId
+  board      Board    @relation("BoardAnswers", fields: [boardId], references: [id], onDelete: Cascade)
+  messageId  String   @db.ObjectId
+  message    Message  @relation("MessageAnswers", fields: [messageId], references: [id], onDelete: Cascade)
+  markedById String   @db.ObjectId
+  markedBy   User     @relation("AnswersMarked", fields: [markedById], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@index([boardId])
+  @@index([messageId])
+  @@map("answers")
 }

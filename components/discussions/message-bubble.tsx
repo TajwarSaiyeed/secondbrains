@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,12 @@ import {
   Copy,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { deleteMessage } from "@/actions/discussions";
+import {
+  deleteMessage,
+  markAnswer,
+  unmarkAnswer,
+  isMessageAnswered,
+} from "@/actions/discussions";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -48,6 +53,8 @@ export function MessageBubble({
   const isOwnMessage = message.authorId === currentUserId;
   const isAI = message.type === "ai";
   const canDelete = isOwnMessage && !isAI;
+  const [isAnswered, setIsAnswered] = useState(false);
+  const [isTogglingAnswer, setIsTogglingAnswer] = useState(false);
 
   const isLongContent = message.content.length > 500;
   const shouldTruncate = isLongContent && !isExpanded;
@@ -58,6 +65,36 @@ export function MessageBubble({
     await deleteMessage(boardId, message.id);
     setIsDeleting(false);
   }
+
+  async function fetchAnswered() {
+    try {
+      const res = await isMessageAnswered(boardId, message.id);
+      setIsAnswered(res.answered);
+    } catch (err) {
+      console.error("Failed to check answer state", err);
+    }
+  }
+
+  async function handleToggleAnswer() {
+    setIsTogglingAnswer(true);
+    try {
+      if (isAnswered) {
+        await unmarkAnswer(boardId, message.id);
+        setIsAnswered(false);
+      } else {
+        await markAnswer(boardId, message.id);
+        setIsAnswered(true);
+      }
+    } catch (err) {
+      console.error("Failed to toggle answer", err);
+    }
+    setIsTogglingAnswer(false);
+  }
+
+  useEffect(() => {
+    fetchAnswered();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCopy() {
     try {
@@ -129,6 +166,13 @@ export function MessageBubble({
                   {isDeleting ? "Deleting..." : "Delete"}
                 </DropdownMenuItem>
               )}
+              <DropdownMenuItem
+                onClick={handleToggleAnswer}
+                disabled={isTogglingAnswer}
+                className={isAnswered ? "text-success" : ""}
+              >
+                {isAnswered ? "Unmark as Answer" : "Mark as Answer"}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

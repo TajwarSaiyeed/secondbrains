@@ -21,6 +21,14 @@ export type NoteDTO = {
   createdAt: string;
   updatedAt: string;
 };
+export type AnswerDTO = {
+  id: string;
+  messageId: string;
+  markedById: string;
+  markedByName?: string | null;
+  messageContent?: string;
+  createdAt: string;
+};
 export type LinkDTO = {
   id: string;
   url: string;
@@ -53,6 +61,7 @@ export type BoardDTO = {
   files: FileDTO[];
   updatedAt: string;
   aiSummary?: AISummaryDTO;
+  answers?: AnswerDTO[];
 };
 
 export type BoardSummaryDTO = {
@@ -148,6 +157,9 @@ export async function getBoard(boardId: string): Promise<BoardDTO | null> {
         orderBy: { generatedAt: "desc" },
         take: 1,
       },
+      answers: {
+        include: { markedBy: true, message: true },
+      },
     },
   });
 
@@ -201,6 +213,14 @@ export async function getBoard(boardId: string): Promise<BoardDTO | null> {
     })),
     updatedAt: board.updatedAt.toISOString(),
     aiSummary,
+    answers: board.answers.map((a) => ({
+      id: a.id,
+      messageId: a.messageId,
+      messageContent: a.message?.content || "",
+      markedById: a.markedById,
+      markedByName: a.markedBy?.name || a.markedBy?.email || null,
+      createdAt: a.createdAt.toISOString(),
+    })),
   };
 }
 

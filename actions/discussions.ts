@@ -483,6 +483,73 @@ export async function deleteMessage(
   return { success: true };
 }
 
+export async function markAnswer(
+  boardId: string,
+  messageId: string
+): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const board = await prisma.board.findFirst({
+    where: {
+      id: boardId,
+      OR: [{ ownerId: user.id }, { members: { some: { userId: user.id } } }],
+    },
+  });
+  if (!board) return { error: "Board not found or access denied" };
+
+  const existing = await prisma.answer.findFirst({
+    where: { boardId, messageId, markedById: user.id },
+  });
+  if (existing) {
+    // idempotent
+    revalidatePath(`/dashboard/${boardId}`);
+    revalidatePath(`/dashboard/${boardId}/discussion`);
+    return { success: true };
+  }
+
+  await prisma.answer.create({
+    data: { boardId, messageId, markedById: user.id },
+  });
+
+  revalidatePath(`/dashboard/${boardId}`);
+  revalidatePath(`/dashboard/${boardId}/discussion`);
+  return { success: true };
+}
+
+export async function unmarkAnswer(
+  boardId: string,
+  messageId: string
+): Promise<ActionResult> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const answer = await prisma.answer.findFirst({
+    where: { boardId, messageId },
+  });
+  if (!answer) return { error: "Answer not found" };
+
+  const board = await prisma.board.findUnique({ where: { id: boardId } });
+  if (!board) return { error: "Board not found" };
+
+  const canRemove = answer.markedById === user.id || board.ownerId === user.id;
+  if (!canRemove) return { error: "Permission denied" };
+
+  await prisma.answer.delete({ where: { id: answer.id } });
+  revalidatePath(`/dashboard/${boardId}`);
+  revalidatePath(`/dashboard/${boardId}/discussion`);
+  return { success: true };
+}
+
+export async function isMessageAnswered(
+  boardId: string,
+  messageId: string
+): Promise<{ answered: boolean; markedById?: string | null }> {
+  const ans = await prisma.answer.findFirst({ where: { boardId, messageId } });
+  if (!ans) return { answered: false };
+  return { answered: true, markedById: ans.markedById };
+}
+
 export async function summarizeDiscussion(
   boardId: string,
   options: {

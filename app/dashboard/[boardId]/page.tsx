@@ -11,6 +11,8 @@ import { FileCard } from "../../../components/boards/file-card";
 import { AISummaryCard } from "../../../components/boards/ai-summary-card";
 import { InviteUsersDialog } from "../../../components/boards/invite-users-dialog";
 import { Button } from "@/components/ui/button";
+import ReactMarkdown from "react-markdown";
+import AnswerContent from "@/components/boards/answer-content";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -209,6 +211,49 @@ const BoardPage = async ({ params }: { params: Params }) => {
             ))}
             {board.notes.length === 0 && (
               <p className="text-sm text-muted-foreground">No notes yet.</p>
+            )}
+          </div>
+          <h2 className="text-lg font-semibold mt-6">Answers</h2>
+          <div className="space-y-3">
+            {(board.answers || []).map((a) => (
+              <Card key={a.id}>
+                <CardContent>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <p className="text-sm text-muted-foreground">Answer</p>
+                      <div className="mb-2">
+                        <AnswerContent content={a.messageContent} />
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Marked by: {a.markedByName || "Unknown"}
+                      </p>
+                    </div>
+                    <div className="flex-shrink-0">
+                      <form
+                        action={async () => {
+                          "use server";
+                          const { unmarkAnswer } = await import(
+                            "@/actions/discussions"
+                          );
+                          await unmarkAnswer(board.id, a.messageId);
+                        }}
+                      >
+                        <Button
+                          type="submit"
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive"
+                        >
+                          Remove
+                        </Button>
+                      </form>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+            {(board.answers || []).length === 0 && (
+              <p className="text-sm text-muted-foreground">No answers yet.</p>
             )}
           </div>
         </div>
