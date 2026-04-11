@@ -42,6 +42,7 @@ yarn-error.log*
 next-env.d.ts
 
 # Application data
+plan/
 generated/prisma
 uploads
 package-lock.json
