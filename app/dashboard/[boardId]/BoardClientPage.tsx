@@ -34,6 +34,7 @@ import { useAuth } from "@/lib/auth-client";
 import { useState } from "react";
 
 export default function BoardClientPage({ boardId }: { boardId: string }) {
+  const currentUser = useQuery(api.users.current);
   const { data: session } = useAuth();
   const isAuthenticated = !!session;
   const board = useQuery(api.boards.getBoardDetails, {
@@ -63,8 +64,7 @@ export default function BoardClientPage({ boardId }: { boardId: string }) {
     return notFound();
   }
 
-  const isOwner = board.ownerId === "current_user_id"; // This needs to be compared with actual current user ID from useQuery(api.users.current)
-  // For now, we'll use a simpler check or fetch the current user
+  const isOwner = currentUser && board.ownerId === currentUser.userId;
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-8">
@@ -78,7 +78,7 @@ export default function BoardClientPage({ boardId }: { boardId: string }) {
             <Link href={`/dashboard/${boardId}/discussion`}>Discussion</Link>
           </Button>
           <InviteUsersDialog boardId={boardId} boardTitle={board.title} />
-          {/* Owner check will be refined once we have current user ID */}
+          {isOwner && (
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button
@@ -126,6 +126,7 @@ export default function BoardClientPage({ boardId }: { boardId: string }) {
               </AlertDialogFooter>
             </AlertDialogContent>
           </AlertDialog>
+          )}
         </div>
       </div>
 

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 export function BoardsGrid() {
   const boards = useQuery(api.boards.listBoards);
+  const currentUser = useQuery(api.users.current);
 
   // Quick user fetch if needed to track current user
   // For precise current mapping if logic relies on it
@@ -54,7 +55,7 @@ export function BoardsGrid() {
         <BoardCard
           key={board._id}
           board={board}
-          currentUserId={board.ownerId}
+          currentUserId={currentUser?.userId || ""}
         />
       ))}
     </div>

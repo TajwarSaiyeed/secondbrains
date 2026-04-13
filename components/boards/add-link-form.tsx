@@ -10,12 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, X } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useSession } from "@/lib/auth-client";
-import { Inngest } from "inngest";
-
-const inngest = new Inngest({ id: "secondbrains-app" });
 
 interface AddLinkFormProps {
   boardId: string;
@@ -29,6 +26,7 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const insertLink = useMutation(api.links.insertLinkAction);
+  const triggerWebScrape = useAction(api.inngestTrigger.triggerWebScrape);
   const { data: session } = useSession();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -47,14 +45,13 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
       });
 
       // 2. Trigger the Inngest background job for AI scraping and vectorization
-      await inngest.send({
-        name: "board/link.added",
-        data: {
+      if (session?.user?.id) {
+        await triggerWebScrape({
           url,
-          boardId: boardId,
-          authorId: session?.user?.id,
-        },
-      });
+          boardId: boardId as any,
+          authorId: session.user.id as any,
+        });
+      }
 
       setUrl("");
       setTitle("");
