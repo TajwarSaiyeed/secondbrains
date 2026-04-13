@@ -7,6 +7,7 @@ export const triggerWebScrape = action({
     url: v.string(),
     boardId: v.id('boards'),
     authorId: v.string(),
+    linkId: v.optional(v.id('links')),
   },
   handler: async (ctx, args) => {
     try {
@@ -16,6 +17,7 @@ export const triggerWebScrape = action({
           url: args.url,
           boardId: args.boardId,
           authorId: args.authorId,
+          linkId: args.linkId,
         },
       })
     } catch (e: any) {

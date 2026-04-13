@@ -35,7 +35,7 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
     setError('')
 
     try {
-      await insertLink({
+      const newLinkId = await insertLink({
         boardId: boardId as any,
         url,
         title,
@@ -48,6 +48,7 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
           url,
           boardId: boardId as any,
           authorId: session.user.id,
+          linkId: newLinkId,
         })
       }
 

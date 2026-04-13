@@ -13,17 +13,21 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { formatDistanceToNow } from 'date-fns'
 import { deleteLink } from '@/actions/board-content'
+import { Badge } from '@/components/ui/badge'
+import { Loader2, AlertCircle } from 'lucide-react'
 
 interface LinkCardProps {
   link: {
-    id: string
+    _id?: string
+    id?: string
     url: string
     title: string
-    description: string
+    description?: string
     authorId: string
-    authorName: string
-    createdAt: string
-    updatedAt: string
+    authorName?: string
+    _creationTime?: number
+    createdAt?: string
+    status?: 'pending' | 'processing' | 'completed' | 'failed'
   }
   boardId: string
   currentUserId: string
@@ -33,11 +37,19 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
   const canDelete = link.authorId === currentUserId
 
+  const id = link._id || link.id || ''
+  const createdAt = link._creationTime
+    ? new Date(link._creationTime)
+    : link.createdAt
+      ? new Date(link.createdAt)
+      : new Date()
+  const authorName = link.authorName || 'Unknown'
+
   async function handleDelete() {
     if (!canDelete) return
 
     setIsDeleting(true)
-    await deleteLink(boardId, link.id)
+    await deleteLink(boardId, id)
     setIsDeleting(false)
   }
 
@@ -48,7 +60,7 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
           <div className="flex items-center gap-2">
             <Avatar className="h-6 w-6">
               <AvatarFallback className="text-xs">
-                {link.authorName
+                {authorName
                   .split(' ')
                   .map((n) => n[0])
                   .join('')
@@ -56,9 +68,9 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="text-sm font-medium">{link.authorName}</p>
+              <p className="text-sm font-medium">{authorName}</p>
               <p className="text-muted-foreground text-xs">
-                {formatDistanceToNow(new Date(link.createdAt), {
+                {formatDistanceToNow(createdAt, {
                   addSuffix: true,
                 })}
               </p>
@@ -93,13 +105,32 @@ export function LinkCard({ link, boardId, currentUserId }: LinkCardProps) {
             rel="noopener noreferrer"
             className="text-primary flex items-center gap-2 font-medium hover:underline"
           >
-            {link.title}
+            {link.title || link.url}
             <ExternalLink className="h-3 w-3" />
           </a>
-          {link.description && (
-            <p className="text-muted-foreground text-sm">{link.description}</p>
+
+          {(link.status === 'pending' || link.status === 'processing') && (
+            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              <span>Extracting and summarizing AI data...</span>
+            </div>
           )}
-          <p className="text-muted-foreground text-xs break-all">{link.url}</p>
+
+          {link.status === 'failed' && (
+            <div className="text-destructive flex items-center gap-2 text-sm">
+              <AlertCircle className="h-3 w-3" />
+              <span>Failed to extract content</span>
+            </div>
+          )}
+
+          {link.status !== 'pending' &&
+            link.status !== 'processing' &&
+            link.description && (
+              <p className="text-muted-foreground line-clamp-3 text-sm">
+                {link.description}
+              </p>
+            )}
+          <p className="text-muted-foreground truncate text-xs">{link.url}</p>
         </div>
       </CardContent>
     </Card>

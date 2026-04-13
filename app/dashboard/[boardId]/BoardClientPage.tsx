@@ -45,6 +45,14 @@ export default function BoardClientPage({ boardId }: { boardId: string }) {
     boardId:
       boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
   })
+  const links = useQuery(api.links.getLinksByBoard, {
+    boardId:
+      boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
+  })
+  const files = useQuery(api.files.getFilesByBoard, {
+    boardId:
+      boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
+  })
   const deleteBoard = useMutation(api.boards.deleteBoard)
   const [isDeleting, setIsDeleting] = useState(false)
 
@@ -145,6 +153,22 @@ export default function BoardClientPage({ boardId }: { boardId: string }) {
                 note={note}
                 boardId={boardId}
                 currentUserId={session?.user?.id || ''}
+              />
+            ))}
+            {links?.map((link) => (
+              <LinkCard
+                key={link._id}
+                link={link}
+                boardId={boardId}
+                currentUserId={session?.user?.id || ''}
+              />
+            ))}
+            {files?.map((file) => (
+              <FileCard
+                key={file._id}
+                file={file}
+                boardId={boardId}
+                canDelete={isOwner || file.uploadedBy === session?.user?.id}
               />
             ))}
           </div>

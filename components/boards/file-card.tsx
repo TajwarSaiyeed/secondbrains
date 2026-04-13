@@ -17,19 +17,23 @@ import { downloadFile, deleteFile } from '@/actions/board-content'
 interface FileCardProps {
   boardId: string
   file: {
-    id: string
+    _id?: string
+    id?: string
     name: string
     size: number
     type: string
     uploadedBy: string
-    uploadedAt: string
+    uploadedAt?: string
+    _creationTime?: number
   }
   canDelete?: boolean
 }
 
 export function FileCard({ boardId, file, canDelete = false }: FileCardProps) {
+  const id = file._id || file.id || ''
+
   async function handleDownload() {
-    const res = await downloadFile(file.id)
+    const res = await downloadFile(id)
     if (!res.success || !res.data) return
     const { base64, contentType, filename } = res.data
     const byteCharacters = atob(base64)
@@ -63,7 +67,7 @@ export function FileCard({ boardId, file, canDelete = false }: FileCardProps) {
     if (!canDelete) return
     const ok = confirm(`Delete file "${file.name}"?`)
     if (!ok) return
-    await deleteFile(boardId, file.id)
+    await deleteFile(boardId, id)
   }
 
   const formatFileSize = (bytes: number) => {

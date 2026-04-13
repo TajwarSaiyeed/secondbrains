@@ -79,6 +79,14 @@ export default defineSchema({
     title: v.string(),
     description: v.string(),
     scrapedContent: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('processing'),
+        v.literal('completed'),
+        v.literal('failed'),
+      ),
+    ),
     authorId: v.string(),
     authorName: v.string(),
     embedding: v.optional(v.array(v.float64())),
