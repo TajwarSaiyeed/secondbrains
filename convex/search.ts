@@ -4,7 +4,7 @@ import { api, internal } from './_generated/api'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
-const model = genAI.getGenerativeModel({ model: 'text-embedding-004' })
+const model = genAI.getGenerativeModel({ model: 'gemini-embedding-001' })
 
 export const searchBoards = query({
   args: {
