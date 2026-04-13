@@ -58,10 +58,17 @@ export function LoginForm({
         password: values.password,
       })
 
-      if (result) {
-        toast.success('Signed in successfully')
-        router.push(finalCallbackUrl)
+      if (result?.error) {
+        const message =
+          (result?.error as any)?.message || 'Invalid email or password'
+        setError(message)
+        toast.error(message)
+        setIsLoading(false)
+        return
       }
+
+      toast.success('Signed in successfully')
+      router.push(finalCallbackUrl)
     } catch (err) {
       setIsLoading(false)
       const message =

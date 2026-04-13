@@ -22,6 +22,13 @@ client.registerRoutes(http, (ctx) =>
     user: {
       changeEmail: { enabled: false },
     },
+    advanced: {
+      // Note: oidc-provider plugin is deprecated in better-auth v1.6.2
+      // Migration to oauth-provider will be done when better-auth v1.7+
+      // becomes stable (currently in beta)
+      // See: https://www.better-auth.com/docs/plugins/oauth-provider
+      useSecureCookies: process.env.NODE_ENV === 'production',
+    },
     plugins: [convex({ authConfig })],
     databaseHooks: {
       user: {
@@ -35,8 +42,14 @@ client.registerRoutes(http, (ctx) =>
                 email: user.email,
                 emailVerified: user.emailVerified,
                 image: user.image ?? null,
-                createdAt: user.createdAt.getTime(),
-                updatedAt: user.updatedAt.getTime(),
+                createdAt:
+                  typeof user.createdAt === 'number'
+                    ? user.createdAt
+                    : new Date(user.createdAt).getTime(),
+                updatedAt:
+                  typeof user.updatedAt === 'number'
+                    ? user.updatedAt
+                    : new Date(user.updatedAt).getTime(),
               },
             )
           },
