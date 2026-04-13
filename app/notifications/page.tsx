@@ -1,15 +1,15 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getNotifications } from "@/actions/notifications";
-import { NotificationsClient } from "../../components/notifications/notifications-client";
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { isAuthenticated } from '@/lib/auth-server'
+import { NotificationsClient } from '../../components/notifications/notifications-client'
 
 async function NotificationsContent() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  const authenticated = await isAuthenticated()
+  if (!authenticated) {
+    redirect('/login?from=/notifications')
+  }
 
-  const notifications = await getNotifications();
-  return <NotificationsClient initialNotifications={notifications} />;
+  return <NotificationsClient />
 }
 
 export default function NotificationsPage() {
@@ -17,5 +17,5 @@ export default function NotificationsPage() {
     <Suspense fallback={<div>Loading...</div>}>
       <NotificationsContent />
     </Suspense>
-  );
+  )
 }

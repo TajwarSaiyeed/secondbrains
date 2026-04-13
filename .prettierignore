@@ -1,0 +1,12 @@
+node_modules
+.next
+.vercel
+dist
+build
+pnpm-lock.yaml
+convex/_generated/
+generated/
+*.log
+.env*
+.env.*
+public/

@@ -1,14 +1,14 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Form,
   FormControl,
@@ -16,63 +16,72 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { RegisterFormValues, registerSchema } from "@/schema/auth-schema";
-import { registerUserApi } from "@/actions/auth/client-api";
-import { toast } from "sonner";
+} from '@/components/ui/form'
+import { RegisterFormValues, registerSchema } from '@/schema/auth-schema'
+import { authClient } from '@/lib/auth-client'
+import { toast } from 'sonner'
 
 interface RegisterFormProps {
-  inviteToken?: string;
+  inviteToken?: string
 }
 
 export function RegisterForm({ inviteToken }: RegisterFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      confirmPassword: "",
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
     },
-  });
+  })
 
-  const password = form.watch("password");
+  const password = form.watch('password')
 
   const passwordRequirements = [
-    { text: "At least 8 characters", met: password.length >= 8 },
-    { text: "Contains uppercase letter", met: /[A-Z]/.test(password) },
-    { text: "Contains lowercase letter", met: /[a-z]/.test(password) },
-    { text: "Contains number", met: /\d/.test(password) },
-  ];
+    { text: 'At least 8 characters', met: password.length >= 8 },
+    { text: 'Contains uppercase letter', met: /[A-Z]/.test(password) },
+    { text: 'Contains lowercase letter', met: /[a-z]/.test(password) },
+    { text: 'Contains number', met: /\d/.test(password) },
+  ]
 
   async function handleRegister(values: RegisterFormValues) {
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true)
+    setError('')
+
+    if (values.password !== values.confirmPassword) {
+      setError('Passwords do not match')
+      toast.error('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
+    const finalCallbackUrl = inviteToken
+      ? `/invite/${inviteToken}`
+      : '/dashboard'
 
     try {
-      const result = await registerUserApi(values);
-      if (!result?.status) {
-        setError(result?.message);
-        toast.error(result?.message || "Registration failed");
-      } else {
-        toast.success("Account created successfully");
-        if (inviteToken) {
-          router.push(`/invite/${inviteToken}`);
-        } else {
-          router.push("/login?message=Account created. Please sign in.");
-        }
+      const result = await authClient.signUp.email({
+        email: values.email,
+        password: values.password,
+        name: values.name,
+      })
+
+      if (result) {
+        toast.success('Account created successfully')
+        router.push(finalCallbackUrl)
       }
-    } catch {
-      setError("An unexpected error occurred");
-      toast.error("An unexpected error occurred");
-    } finally {
-      setIsLoading(false);
+    } catch (err: any) {
+      setIsLoading(false)
+      const message = err?.message || 'Registration failed. Please try again.'
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -131,7 +140,7 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
                   <div className="relative">
                     <Input
                       {...field}
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Create a password"
                       disabled={isLoading}
                     />
@@ -139,7 +148,7 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                      className="absolute top-1/2 right-2 h-8 w-8 -translate-y-1/2"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -152,7 +161,7 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
                 </FormControl>
 
                 {password && (
-                  <div className="space-y-1 mt-2">
+                  <div className="mt-2 space-y-1">
                     {passwordRequirements.map((req, index) => (
                       <div
                         key={index}
@@ -161,11 +170,11 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
                         {req.met ? (
                           <CheckCircle className="h-3 w-3 text-green-500" />
                         ) : (
-                          <XCircle className="h-3 w-3 text-muted-foreground" />
+                          <XCircle className="text-muted-foreground h-3 w-3" />
                         )}
                         <span
                           className={
-                            req.met ? "text-green-600" : "text-muted-foreground"
+                            req.met ? 'text-green-600' : 'text-muted-foreground'
                           }
                         >
                           {req.text}
@@ -188,7 +197,7 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
                   <div className="relative">
                     <Input
                       {...field}
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Confirm your password"
                       disabled={isLoading}
                     />
@@ -196,7 +205,7 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                      className="absolute top-1/2 right-2 h-8 w-8 -translate-y-1/2"
                       onClick={() =>
                         setShowConfirmPassword(!showConfirmPassword)
                       }
@@ -221,10 +230,10 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
           )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Creating account..." : "Create account"}
+            {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
         </form>
       </Form>
     </>
-  );
+  )
 }

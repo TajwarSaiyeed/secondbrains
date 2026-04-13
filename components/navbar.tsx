@@ -1,45 +1,51 @@
-import Link from "next/link";
-import { auth } from "@/auth";
-import { Brain, Bell, LogOut, Settings, User, Menu } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { logoutUser } from "@/actions/auth/logout";
-import { getUnreadNotificationCount } from "@/actions/notifications";
+'use client'
+
+import Link from 'next/link'
+import { Brain, Bell, LogOut, Settings, User, Menu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ThemeToggle } from '@/components/theme-toggle'
+import { GlobalSearch } from '@/components/global-search'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
+} from '@/components/ui/sheet'
+import { useQuery } from 'convex/react'
+import { signOut, useSession } from '@/lib/auth-client'
+import { api } from '@/convex/_generated/api'
 
-export default async function Navbar() {
-  const session = await auth();
-  const isAuthed = !!session?.user;
-  const userName = session?.user?.name || "Guest";
-  const unreadCount = isAuthed ? await getUnreadNotificationCount() : 0;
+export default function Navbar() {
+  const session = useSession()
+  const user = useQuery(api.users.current)
+
+  const isAuthed = user !== null && user !== undefined
+  const userName = user?.name || user?.email || 'Guest'
+  const unreadCount = useQuery(api.notifications.countUnread) || 0
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Responsive sizing */}
           <Link
-            href={isAuthed ? "/dashboard" : "/"}
-            className="flex items-center gap-2 flex-shrink-0"
+            href={isAuthed ? '/dashboard' : '/'}
+            className="flex shrink-0 items-center gap-2"
           >
-            <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
-            <span className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
+            <Brain className="text-primary h-6 w-6 sm:h-8 sm:w-8" />
+            <span className="text-foreground text-lg font-bold sm:text-xl lg:text-2xl">
               SecondBrains
             </span>
           </Link>
 
           {/* Desktop Menu - Enhanced responsive breakpoints */}
-          <div className="hidden lg:flex items-center gap-2 xl:gap-4">
+          <div className="hidden items-center gap-2 lg:flex xl:gap-4">
             {isAuthed ? (
               <>
-                <span className="text-sm text-muted-foreground max-w-32 truncate">
+                <GlobalSearch />
+                <span className="text-muted-foreground max-w-32 truncate text-sm">
                   Welcome, {userName}
                 </span>
                 <Link href="/notifications">
@@ -52,9 +58,9 @@ export default async function Navbar() {
                     {unreadCount > 0 && (
                       <Badge
                         variant="destructive"
-                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                        className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
                       >
-                        {unreadCount > 99 ? "99+" : unreadCount}
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </Badge>
                     )}
                     <span className="sr-only">
@@ -75,17 +81,15 @@ export default async function Navbar() {
                   </Button>
                 </Link>
                 <ThemeToggle />
-                <form action={logoutUser}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    type="submit"
-                    className="cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="sr-only">Logout</span>
-                  </Button>
-                </form>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void signOut()}
+                  className="cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="sr-only">Logout</span>
+                </Button>
               </>
             ) : (
               <>
@@ -105,7 +109,7 @@ export default async function Navbar() {
           </div>
 
           {/* Tablet Menu - Show some items on medium screens */}
-          <div className="hidden md:flex lg:hidden items-center gap-2">
+          <div className="hidden items-center gap-2 md:flex lg:hidden">
             {isAuthed ? (
               <>
                 <Link href="/notifications">
@@ -118,9 +122,9 @@ export default async function Navbar() {
                     {unreadCount > 0 && (
                       <Badge
                         variant="destructive"
-                        className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
+                        className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center p-0 text-xs"
                       >
-                        {unreadCount > 99 ? "99+" : unreadCount}
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </Badge>
                     )}
                   </Button>
@@ -138,7 +142,7 @@ export default async function Navbar() {
                       <SheetTitle className="text-left">Menu</SheetTitle>
                     </SheetHeader>
                     <div className="mt-6 flex flex-col gap-3">
-                      <span className="text-sm text-muted-foreground px-2">
+                      <span className="text-muted-foreground px-2 text-sm">
                         Welcome, {userName}
                       </span>
                       <Link href="/dashboard">
@@ -154,7 +158,7 @@ export default async function Navbar() {
                           variant="ghost"
                           className="w-full justify-start"
                         >
-                          <User className="h-4 w-4 mr-2" />
+                          <User className="mr-2 h-4 w-4" />
                           Profile
                         </Button>
                       </Link>
@@ -163,17 +167,19 @@ export default async function Navbar() {
                           variant="ghost"
                           className="w-full justify-start"
                         >
-                          <Settings className="h-4 w-4 mr-2" />
+                          <Settings className="mr-2 h-4 w-4" />
                           Settings
                         </Button>
                       </Link>
-                      <div className="border-t pt-3 mt-3">
-                        <form action={logoutUser}>
-                          <Button variant="destructive" className="w-full">
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Logout
-                          </Button>
-                        </form>
+                      <div className="mt-3 border-t pt-3">
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => void signOut()}
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Logout
+                        </Button>
                       </div>
                     </div>
                   </SheetContent>
@@ -207,16 +213,17 @@ export default async function Navbar() {
               </SheetTrigger>
               <SheetContent side="right" className="w-80 sm:w-72">
                 <SheetHeader>
-                  <SheetTitle className="text-left flex items-center gap-2">
-                    <Brain className="h-5 w-5 text-primary" />
+                  <SheetTitle className="flex items-center gap-2 text-left">
+                    <Brain className="text-primary h-5 w-5" />
                     SecondBrains
                   </SheetTitle>
                 </SheetHeader>
                 <div className="mt-6 flex flex-col gap-3 px-5">
                   {isAuthed ? (
                     <>
-                      <div className="px-2 py-2 bg-muted/50 rounded-lg">
-                        <span className="text-sm text-muted-foreground">
+                      <GlobalSearch />
+                      <div className="bg-muted/50 rounded-lg px-2 py-2">
+                        <span className="text-muted-foreground text-sm">
                           Welcome, {userName}
                         </span>
                       </div>
@@ -234,12 +241,12 @@ export default async function Navbar() {
                           className="w-full justify-between"
                         >
                           <span className="flex items-center">
-                            <Bell className="h-4 w-4 mr-2" />
+                            <Bell className="mr-2 h-4 w-4" />
                             Notifications
                           </span>
                           {unreadCount > 0 && (
                             <Badge variant="destructive" className="ml-2">
-                              {unreadCount > 99 ? "99+" : unreadCount}
+                              {unreadCount > 99 ? '99+' : unreadCount}
                             </Badge>
                           )}
                         </Button>
@@ -249,7 +256,7 @@ export default async function Navbar() {
                           variant="ghost"
                           className="w-full justify-start"
                         >
-                          <User className="h-4 w-4 mr-2" />
+                          <User className="mr-2 h-4 w-4" />
                           Profile
                         </Button>
                       </Link>
@@ -258,7 +265,7 @@ export default async function Navbar() {
                           variant="ghost"
                           className="w-full justify-start"
                         >
-                          <Settings className="h-4 w-4 mr-2" />
+                          <Settings className="mr-2 h-4 w-4" />
                           Settings
                         </Button>
                       </Link>
@@ -266,13 +273,15 @@ export default async function Navbar() {
                         <span className="text-sm font-medium">Theme</span>
                         <ThemeToggle />
                       </div>
-                      <div className="border-t pt-3 mt-3">
-                        <form action={logoutUser}>
-                          <Button variant="destructive" className="w-full">
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Logout
-                          </Button>
-                        </form>
+                      <div className="mt-3 border-t pt-3">
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => void signOut()}
+                        >
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Logout
+                        </Button>
                       </div>
                     </>
                   ) : (
@@ -281,7 +290,7 @@ export default async function Navbar() {
                         <span className="text-sm font-medium">Theme</span>
                         <ThemeToggle />
                       </div>
-                      <div className="border-t pt-3 mt-3 space-y-2">
+                      <div className="mt-3 space-y-2 border-t pt-3">
                         <Link href="/login">
                           <Button variant="ghost" className="w-full">
                             Sign in
@@ -300,5 +309,5 @@ export default async function Navbar() {
         </div>
       </div>
     </header>
-  );
+  )
 }

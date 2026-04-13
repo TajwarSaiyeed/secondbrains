@@ -1,50 +1,64 @@
-"use client";
+'use client'
 
-import type React from "react";
+import type React from 'react'
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus, X } from "lucide-react";
-import { addLink, type ActionResult } from "@/actions/board-content";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Plus, X } from 'lucide-react'
+import { useMutation, useAction } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { useSession } from '@/lib/auth-client'
 
 interface AddLinkFormProps {
-  boardId: string;
+  boardId: string
 }
 
 export function AddLinkForm({ boardId }: AddLinkFormProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [url, setUrl] = useState("");
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false)
+  const [url, setUrl] = useState('')
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const insertLink = useMutation(api.links.insertLinkAction)
+  const triggerWebScrape = useAction(api.inngestTrigger.triggerWebScrape)
+  const { data: session } = useSession()
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
+    e.preventDefault()
+    setIsLoading(true)
+    setError('')
 
-    const result: ActionResult = await addLink(
-      boardId,
-      url,
-      title,
-      description
-    );
+    try {
+      await insertLink({
+        boardId: boardId as any,
+        url,
+        title,
+        description,
+        authorId: session?.user?.id || '',
+      })
 
-    if ("error" in result) {
-      setError(result.error);
-      setIsLoading(false);
-    } else {
-      setUrl("");
-      setTitle("");
-      setDescription("");
-      setIsOpen(false);
-      setIsLoading(false);
+      if (session?.user?.id) {
+        await triggerWebScrape({
+          url,
+          boardId: boardId as any,
+          authorId: session.user.id as any,
+        })
+      }
+
+      setUrl('')
+      setTitle('')
+      setDescription('')
+      setIsOpen(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add link')
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -58,7 +72,7 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
         <Plus className="h-4 w-4" />
         Add Link
       </Button>
-    );
+    )
   }
 
   return (
@@ -116,7 +130,7 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
               variant="outline"
               onClick={() => setIsOpen(false)}
               disabled={isLoading}
-              className="dark:text-white dark:hover:text-rose-500 dark:hover:bg-transparent dark:hover:border-rose-500"
+              className="dark:text-white dark:hover:border-rose-500 dark:hover:bg-transparent dark:hover:text-rose-500"
             >
               Cancel
             </Button>
@@ -124,11 +138,11 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
               type="submit"
               disabled={isLoading || !url.trim() || !title.trim()}
             >
-              {isLoading ? "Adding..." : "Add Link"}
+              {isLoading ? 'Adding...' : 'Add Link'}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  );
+  )
 }

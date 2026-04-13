@@ -1,11 +1,11 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card'
 import {
   Brain,
   Users,
@@ -13,69 +13,69 @@ import {
   Download,
   Sparkles,
   MessageSquare,
-} from "lucide-react";
-import { BackgroundBeamsWithCollision } from "@/components/ui/background-beams-with-collision";
-import { TextGenerateEffect } from "@/components/ui/text-generate-effect";
-import { AnimatedTooltip } from "@/components/ui/animated-tooltip";
+} from 'lucide-react'
+import { BackgroundBeamsWithCollision } from '@/components/ui/background-beams-with-collision'
+import { TextGenerateEffect } from '@/components/ui/text-generate-effect'
+import { AnimatedTooltip } from '@/components/ui/animated-tooltip'
 
-import Abid from "@/components/assets/abid.png";
-import Ahad from "@/components/assets/ahad.jpg";
-import Ahammad from "@/components/assets/ahammad.jpg";
+import Abid from '@/components/assets/abid.png'
+import Ahad from '@/components/assets/ahad.jpg'
+import Ahammad from '@/components/assets/ahammad.jpg'
 
 const teamMembers = [
   {
     id: 1,
-    name: "Tahmidul Alam Ahad",
-    designation: "Backend Developer",
+    name: 'Tahmidul Alam Ahad',
+    designation: 'Backend Developer',
     image: Ahad,
   },
   {
     id: 2,
-    name: "Tajwar Saiyeed Abid",
-    designation: "Full Stack Developer",
+    name: 'Tajwar Saiyeed Abid',
+    designation: 'Full Stack Developer',
     image: Abid,
   },
   {
     id: 3,
-    name: "Kazi Ahammad Ullah",
-    designation: "Frontend Developer",
+    name: 'Kazi Ahammad Ullah',
+    designation: 'Frontend Developer',
     image: Ahammad,
   },
-];
+]
 
 export default async function LandingPage() {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       {/* Hero Section */}
 
       <BackgroundBeamsWithCollision className="min-h-screen">
-        <section className="py-20 px-4 relative z-10">
-          <div className="container mx-auto text-center max-w-4xl">
-            <div className="flex justify-center mb-6">
-              <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-full">
-                <Brain className="h-12 w-12 text-primary" />
+        <section className="relative z-10 px-4 py-20">
+          <div className="container mx-auto max-w-4xl text-center">
+            <div className="mb-6 flex justify-center">
+              <div className="bg-primary/10 dark:bg-primary/20 rounded-full p-3">
+                <Brain className="text-primary h-12 w-12" />
               </div>
             </div>
             <div className="mb-6">
               <TextGenerateEffect
                 words="Transform your learning with AI-powered collaborative study and research that adapts to your unique learning style and accelerates your academic success."
-                className="text-5xl font-bold text-foreground"
+                className="text-foreground text-5xl font-bold"
               />
             </div>
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            <p className="text-muted-foreground mx-auto mb-8 max-w-2xl text-xl">
               Experience intelligent study boards, seamless collaboration, and
               AI-driven insights that help you understand complex topics faster
               than ever before.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" asChild className="text-lg px-8 py-6">
+            <div className="mb-12 flex flex-col justify-center gap-4 sm:flex-row">
+              <Button size="lg" asChild className="px-8 py-6 text-lg">
                 <Link href="/register">Start Learning Today</Link>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
                 asChild
-                className="text-lg px-8 py-6 bg-background/50 dark:bg-background/80 border-border hover:bg-accent"
+                className="bg-background/50 dark:bg-background/80 border-border hover:bg-accent px-8 py-6 text-lg"
               >
                 <Link href="/login">Sign In</Link>
               </Button>
@@ -83,7 +83,7 @@ export default async function LandingPage() {
 
             {/* Team Section with Animated Tooltips */}
             <div className="mt-16">
-              <p className="text-sm text-muted-foreground mb-4">
+              <p className="text-muted-foreground mb-4 text-sm">
                 Trusted by researchers worldwide
               </p>
               <div className="flex justify-center">
@@ -95,23 +95,23 @@ export default async function LandingPage() {
       </BackgroundBeamsWithCollision>
 
       {/* Features Section */}
-      <section className="py-20 px-4 bg-muted/30">
+      <section className="bg-muted/30 px-4 py-20">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-4">
+          <div className="mb-16 text-center">
+            <h2 className="text-foreground mb-4 text-3xl font-bold">
               Everything you need for effective studying
             </h2>
-            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
               Powerful features designed to enhance collaboration and accelerate
               learning
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
             <Card className="border-border">
               <CardHeader>
-                <div className="p-2 bg-primary/10 rounded-lg w-fit">
-                  <Users className="h-6 w-6 text-primary" />
+                <div className="bg-primary/10 w-fit rounded-lg p-2">
+                  <Users className="text-primary h-6 w-6" />
                 </div>
                 <CardTitle>Real-time Collaboration</CardTitle>
                 <CardDescription>
@@ -123,8 +123,8 @@ export default async function LandingPage() {
 
             <Card className="border-border">
               <CardHeader>
-                <div className="p-2 bg-secondary/10 rounded-lg w-fit">
-                  <Sparkles className="h-6 w-6 text-secondary" />
+                <div className="bg-secondary/10 w-fit rounded-lg p-2">
+                  <Sparkles className="text-secondary h-6 w-6" />
                 </div>
                 <CardTitle>AI Summarization</CardTitle>
                 <CardDescription>
@@ -136,8 +136,8 @@ export default async function LandingPage() {
 
             <Card className="border-border">
               <CardHeader>
-                <div className="p-2 bg-primary/10 rounded-lg w-fit">
-                  <FileText className="h-6 w-6 text-primary" />
+                <div className="bg-primary/10 w-fit rounded-lg p-2">
+                  <FileText className="text-primary h-6 w-6" />
                 </div>
                 <CardTitle>File Management</CardTitle>
                 <CardDescription>
@@ -149,8 +149,8 @@ export default async function LandingPage() {
 
             <Card className="border-border">
               <CardHeader>
-                <div className="p-2 bg-secondary/10 rounded-lg w-fit">
-                  <MessageSquare className="h-6 w-6 text-secondary" />
+                <div className="bg-secondary/10 w-fit rounded-lg p-2">
+                  <MessageSquare className="text-secondary h-6 w-6" />
                 </div>
                 <CardTitle>Discussion Forums</CardTitle>
                 <CardDescription>
@@ -162,12 +162,12 @@ export default async function LandingPage() {
 
             <Card className="border-border">
               <CardHeader>
-                <div className="p-2 bg-primary/10 rounded-lg w-fit">
-                  <Download className="h-6 w-6 text-primary" />
+                <div className="bg-primary/10 w-fit rounded-lg p-2">
+                  <Download className="text-primary h-6 w-6" />
                 </div>
                 <div className="flex items-center gap-3">
                   <CardTitle>PDF Export</CardTitle>
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted/20 text-muted-foreground">
+                  <span className="bg-muted/20 text-muted-foreground rounded-full px-2 py-1 text-xs font-medium">
                     Upcoming
                   </span>
                 </div>
@@ -180,12 +180,12 @@ export default async function LandingPage() {
 
             <Card className="border-border">
               <CardHeader>
-                <div className="p-2 bg-secondary/10 rounded-lg w-fit">
-                  <Brain className="h-6 w-6 text-secondary" />
+                <div className="bg-secondary/10 w-fit rounded-lg p-2">
+                  <Brain className="text-secondary h-6 w-6" />
                 </div>
                 <div className="flex items-center gap-3">
                   <CardTitle>Smart Insights</CardTitle>
-                  <span className="text-xs font-medium px-2 py-1 rounded-full bg-muted/20 text-muted-foreground">
+                  <span className="bg-muted/20 text-muted-foreground rounded-full px-2 py-1 text-xs font-medium">
                     Upcoming
                   </span>
                 </div>
@@ -200,27 +200,27 @@ export default async function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto text-center max-w-3xl">
-          <h2 className="text-3xl font-bold text-foreground mb-6">
+      <section className="px-4 py-20">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h2 className="text-foreground mb-6 text-3xl font-bold">
             Ready to revolutionize your learning?
           </h2>
-          <p className="text-lg text-muted-foreground mb-8">
+          <p className="text-muted-foreground mb-8 text-lg">
             Join thousands of students and researchers who are already using
             SecondBrains to study smarter, not harder.
           </p>
-          <Button size="lg" asChild className="text-lg px-8 py-6">
+          <Button size="lg" asChild className="px-8 py-6 text-lg">
             <Link href="/register">Get Started Free</Link>
           </Button>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 px-4">
+      <footer className="border-border border-t px-4 py-8">
         <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Brain className="h-6 w-6 text-primary" />
-            <span className="text-lg font-semibold text-foreground">
+          <div className="mb-4 flex items-center justify-center gap-2">
+            <Brain className="text-primary h-6 w-6" />
+            <span className="text-foreground text-lg font-semibold">
               SecondBrains
             </span>
           </div>
@@ -231,5 +231,5 @@ export default async function LandingPage() {
         </div>
       </footer>
     </div>
-  );
+  )
 }

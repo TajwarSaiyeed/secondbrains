@@ -1,12 +1,12 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle } from "lucide-react";
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CheckCircle } from 'lucide-react'
 import {
   Form,
   FormControl,
@@ -15,65 +15,65 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
+} from '@/components/ui/form'
 import {
   forgotPasswordSchema,
   ForgotPasswordValues,
-} from "@/schema/auth-schema";
-import { sendPasswordResetEmail } from "@/actions/auth/password";
-import { toast } from "sonner";
+} from '@/schema/auth-schema'
+import { sendPasswordResetEmail } from '@/actions/auth/password'
+import { toast } from 'sonner'
 
 export function ForgotPasswordForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [successEmail, setSuccessEmail] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [successEmail, setSuccessEmail] = useState<string | null>(null)
 
   const form = useForm<ForgotPasswordValues>({
     resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: { email: "" },
-    mode: "onChange",
-  });
+    defaultValues: { email: '' },
+    mode: 'onChange',
+  })
 
   async function handleSubmit(values: ForgotPasswordValues) {
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true)
+    setError('')
 
-    const result = await sendPasswordResetEmail({ email: values.email });
+    const result = await sendPasswordResetEmail(values.email)
 
     if (!result?.status) {
-      setError(result?.message || "Failed to send reset email");
-      toast.error(result?.message || "Failed to send reset email");
-      setIsLoading(false);
+      setError(result?.message || 'Failed to send reset email')
+      toast.error(result?.message || 'Failed to send reset email')
+      setIsLoading(false)
     } else {
-      setSuccessEmail(values.email);
-      toast.success("If the email exists, a reset link has been sent.");
-      setIsLoading(false);
-      form.reset();
+      setSuccessEmail(values.email)
+      toast.success('If the email exists, a reset link has been sent.')
+      setIsLoading(false)
+      form.reset()
     }
   }
 
   if (successEmail) {
     return (
-      <div className="text-center space-y-4">
+      <div className="space-y-4 text-center">
         <div className="flex justify-center">
           <CheckCircle className="h-12 w-12 text-green-500" />
         </div>
         <div>
-          <h3 className="text-lg font-semibold text-foreground">
+          <h3 className="text-foreground text-lg font-semibold">
             Check your email
           </h3>
-          <p className="text-sm text-muted-foreground mt-2">
-            We&apos;ve sent a password reset link to{" "}
+          <p className="text-muted-foreground mt-2 text-sm">
+            We&apos;ve sent a password reset link to{' '}
             <strong>{successEmail}</strong>
           </p>
         </div>
-        <div className="text-sm text-muted-foreground">
+        <div className="text-muted-foreground text-sm">
           <p>Didn&apos;t receive the email? Check your spam folder or</p>
           <Button
             variant="link"
             onClick={() => {
-              setSuccessEmail(null);
-              setError("");
+              setSuccessEmail(null)
+              setError('')
             }}
             className="h-auto p-0"
           >
@@ -81,7 +81,7 @@ export function ForgotPasswordForm() {
           </Button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -120,9 +120,9 @@ export function ForgotPasswordForm() {
           className="w-full"
           disabled={isLoading || !form.formState.isValid}
         >
-          {isLoading ? "Sending..." : "Send Reset Link"}
+          {isLoading ? 'Sending...' : 'Send Reset Link'}
         </Button>
       </form>
     </Form>
-  );
+  )
 }

@@ -1,26 +1,26 @@
-import Link from "next/link";
-import { Brain } from "lucide-react";
+import Link from 'next/link'
+import { Brain } from 'lucide-react'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { ForgotPasswordForm } from "../components/forgot-password-form";
+} from '@/components/ui/card'
+import { ForgotPasswordForm } from '../components/forgot-password-form'
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Brain className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">
+        <div className="mb-8 text-center">
+          <Link href="/" className="mb-6 inline-flex items-center gap-2">
+            <Brain className="text-primary h-8 w-8" />
+            <span className="text-foreground text-2xl font-bold">
               SecondBrains
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-foreground text-2xl font-bold">
             Reset your password
           </h1>
           <p className="text-muted-foreground mt-2">
@@ -40,8 +40,8 @@ export default function ForgotPasswordPage() {
             <ForgotPasswordForm />
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Remember your password?{" "}
+              <p className="text-muted-foreground text-sm">
+                Remember your password?{' '}
                 <Link href="/login" className="text-primary hover:underline">
                   Sign in
                 </Link>
@@ -51,5 +51,5 @@ export default function ForgotPasswordPage() {
         </Card>
       </div>
     </div>
-  );
+  )
 }

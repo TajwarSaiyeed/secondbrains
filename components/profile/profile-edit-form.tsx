@@ -1,56 +1,53 @@
-"use client";
+'use client'
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { User, Mail, Save } from "lucide-react";
-import { updateProfile } from "@/actions/profile";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
+} from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { User, Mail, Save } from 'lucide-react'
+import { updateProfile } from '@/actions/profile'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 
 interface ProfileEditFormProps {
   user: {
-    _id: string;
-    name: string;
-    email: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+    _id: string
+    name: string
+    email: string
+    createdAt: string
+    updatedAt: string
+  }
 }
 
 const Schema = z.object({
-  name: z.string().trim().min(2, "Name must be at least 2 characters"),
-  email: z.string().trim().email("Please enter a valid email"),
-});
+  name: z.string().trim().min(2, 'Name must be at least 2 characters'),
+  email: z.string().trim().email('Please enter a valid email'),
+})
 
-type FormValues = z.infer<typeof Schema>;
+type FormValues = z.infer<typeof Schema>
 
 export function ProfileEditForm({ user }: ProfileEditFormProps) {
   const { register, handleSubmit, formState, reset } = useForm<FormValues>({
     resolver: zodResolver(Schema),
     defaultValues: { name: user.name, email: user.email },
-  });
+  })
 
   async function onSubmit(values: FormValues) {
-    const fd = new FormData();
-    fd.set("name", values.name);
-    fd.set("email", values.email);
-    const result = await updateProfile(fd);
-    if ("error" in result && result.error) {
-      toast.error(result.error);
+    const result = await updateProfile(values)
+    if ('error' in result && result.error) {
+      toast.error(result.error)
     } else {
-      toast.success("Profile updated successfully");
-      reset(values);
+      toast.success('Profile updated successfully')
+      reset(values)
     }
   }
 
@@ -68,32 +65,32 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
             <Avatar className="h-16 w-16">
               <AvatarFallback className="text-lg">
                 {user.name
-                  .split(" ")
+                  .split(' ')
                   .map((n) => n[0])
-                  .join("")
+                  .join('')
                   .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
               <p className="text-sm font-medium">Profile Picture</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Avatar is generated from your initials
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="name">Full Name</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <User className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                 <Input
                   id="name"
                   type="text"
                   placeholder="Enter your full name"
                   className="pl-10"
                   disabled={formState.isSubmitting}
-                  {...register("name")}
+                  {...register('name')}
                 />
               </div>
               {formState.errors.name && (
@@ -105,14 +102,14 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Mail className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
                 <Input
                   id="email"
                   type="email"
                   placeholder="Enter your email"
                   className="pl-10"
                   disabled={formState.isSubmitting}
-                  {...register("email")}
+                  {...register('email')}
                 />
               </div>
               {formState.errors.email && (
@@ -123,7 +120,7 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Account Created</Label>
               <Input
@@ -149,11 +146,11 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
               className="gap-2"
             >
               <Save className="h-4 w-4" />
-              {formState.isSubmitting ? "Saving..." : "Save Changes"}
+              {formState.isSubmitting ? 'Saving...' : 'Save Changes'}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  );
+  )
 }

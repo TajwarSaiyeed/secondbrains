@@ -1,53 +1,53 @@
-"use client";
+'use client'
 
-import { useState, useRef } from "react";
+import { useState, useRef } from 'react'
 import {
   motion,
   useTransform,
   AnimatePresence,
   useMotionValue,
   useSpring,
-} from "motion/react";
-import { StaticImageData } from "next/image";
-import Image from "next/image";
+} from 'motion/react'
+import { StaticImageData } from 'next/image'
+import Image from 'next/image'
 
 export const AnimatedTooltip = ({
   items,
 }: {
   items: {
-    id: number;
-    name: string;
-    designation: string;
-    image: StaticImageData;
-  }[];
+    id: number
+    name: string
+    designation: string
+    image: StaticImageData
+  }[]
 }) => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  const springConfig = { stiffness: 100, damping: 15 };
-  const x = useMotionValue(0);
-  const animationFrameRef = useRef<number | null>(null);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const springConfig = { stiffness: 100, damping: 15 }
+  const x = useMotionValue(0)
+  const animationFrameRef = useRef<number | null>(null)
 
   const rotate = useSpring(
     useTransform(x, [-100, 100], [-45, 45]),
-    springConfig
-  );
+    springConfig,
+  )
   const translateX = useSpring(
     useTransform(x, [-100, 100], [-50, 50]),
-    springConfig
-  );
+    springConfig,
+  )
 
   const handleMouseMove = (event: React.MouseEvent<HTMLImageElement>) => {
     if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
+      cancelAnimationFrame(animationFrameRef.current)
     }
 
     animationFrameRef.current = requestAnimationFrame(() => {
-      const target = event.currentTarget as HTMLImageElement;
-      const rect = target.getBoundingClientRect();
-      const halfWidth = rect.width / 2;
-      const offsetX = event.clientX - rect.left;
-      x.set(offsetX - halfWidth);
-    });
-  };
+      const target = event.currentTarget as HTMLImageElement
+      const rect = target.getBoundingClientRect()
+      const halfWidth = rect.width / 2
+      const offsetX = event.clientX - rect.left
+      x.set(offsetX - halfWidth)
+    })
+  }
 
   return (
     <>
@@ -67,7 +67,7 @@ export const AnimatedTooltip = ({
                   y: 0,
                   scale: 1,
                   transition: {
-                    type: "spring",
+                    type: 'spring',
                     stiffness: 260,
                     damping: 10,
                   },
@@ -76,7 +76,7 @@ export const AnimatedTooltip = ({
                 style={{
                   translateX: translateX,
                   rotate: rotate,
-                  whiteSpace: "nowrap",
+                  whiteSpace: 'nowrap',
                 }}
                 className="absolute -top-16 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center justify-center rounded-md bg-black px-4 py-2 text-xs shadow-xl"
               >
@@ -100,5 +100,5 @@ export const AnimatedTooltip = ({
         </div>
       ))}
     </>
-  );
-};
+  )
+}

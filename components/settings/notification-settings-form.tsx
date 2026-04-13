@@ -1,24 +1,24 @@
-"use client";
+'use client'
 
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { updateSettings } from "@/actions/settings";
-import { useForm, Controller } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
+import { Button } from '@/components/ui/button'
+import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
+import { updateSettings } from '@/actions/settings'
+import { useForm, Controller } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 
 interface NotificationSettingsFormProps {
-  settings: { emailNotifications: boolean; aiSuggestions: boolean };
+  settings: { emailNotifications: boolean; aiSuggestions: boolean }
 }
 
 const Schema = z.object({
   emailNotifications: z.boolean(),
   aiSuggestions: z.boolean(),
-});
+})
 
-type FormValues = z.infer<typeof Schema>;
+type FormValues = z.infer<typeof Schema>
 
 export function NotificationSettingsForm({
   settings,
@@ -29,17 +29,17 @@ export function NotificationSettingsForm({
       emailNotifications: !!settings.emailNotifications,
       aiSuggestions: !!settings.aiSuggestions,
     },
-  });
+  })
 
   async function onSubmit(values: FormValues) {
-    const fd = new FormData();
-    if (values.emailNotifications) fd.set("emailNotifications", "on");
-    if (values.aiSuggestions) fd.set("aiSuggestions", "on");
-    const res = await updateSettings(fd);
-    if ("error" in res) {
-      toast.error(res.error);
+    const res = await updateSettings({
+      emailNotifications: values.emailNotifications,
+      aiSuggestions: values.aiSuggestions,
+    })
+    if ('error' in res && res.error) {
+      toast.error(res.error)
     } else {
-      toast.success("Preferences updated");
+      toast.success('Preferences updated')
     }
   }
 
@@ -48,7 +48,7 @@ export function NotificationSettingsForm({
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <Label htmlFor="emailNotifications">Email Notifications</Label>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Receive updates about boards and invites via email.
           </p>
         </div>
@@ -69,7 +69,7 @@ export function NotificationSettingsForm({
       <div className="flex items-center justify-between">
         <div className="space-y-1">
           <Label htmlFor="aiSuggestions">AI Suggestions</Label>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             Enable AI-generated summaries and suggestions.
           </p>
         </div>
@@ -91,5 +91,5 @@ export function NotificationSettingsForm({
         Save Preferences
       </Button>
     </form>
-  );
+  )
 }

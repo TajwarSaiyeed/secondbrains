@@ -1,7 +1,9 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -9,38 +11,48 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Plus } from "lucide-react";
-import { createBoard } from "@/actions/boards";
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Plus } from 'lucide-react'
 
 export function CreateBoardDialog() {
-  const [open, setOpen] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const [open, setOpen] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const createBoardMutation = useMutation(api.boards.createBoard)
 
   async function handleSubmit(formData: FormData) {
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true)
+    setError('')
 
-    const result = await createBoard(formData);
+    try {
+      const title = formData.get('title') as string
+      const description = formData.get('description') as string
 
-    if (result && typeof result === "object" && "error" in result) {
-      setError(result.error as string);
-      setIsLoading(false);
-    } else {
-      setOpen(false);
-      setIsLoading(false);
+      if (!title || !description) {
+        setError('Title and description are required')
+        setIsLoading(false)
+        return
+      }
+
+      await createBoardMutation({ title, description })
+      setOpen(false)
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to create board'
+      setError(errorMessage)
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2 cursor-pointer">
+        <Button className="cursor-pointer gap-2">
           <Plus className="h-4 w-4" />
           Create New Board
         </Button>
@@ -86,7 +98,7 @@ export function CreateBoardDialog() {
               variant="outline"
               onClick={() => setOpen(false)}
               disabled={isLoading}
-              className="cursor-pointer dark:text-white dark:hover:text-rose-500 dark:hover:bg-transparent dark:hover:border-rose-500"
+              className="cursor-pointer dark:text-white dark:hover:border-rose-500 dark:hover:bg-transparent dark:hover:text-rose-500"
             >
               Cancel
             </Button>
@@ -95,11 +107,11 @@ export function CreateBoardDialog() {
               disabled={isLoading}
               className="cursor-pointer"
             >
-              {isLoading ? "Creating..." : "Create Board"}
+              {isLoading ? 'Creating...' : 'Create Board'}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

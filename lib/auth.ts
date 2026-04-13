@@ -1,22 +1,28 @@
-import { auth } from "@/auth";
+import { convexBetterAuthNextJs } from '@convex-dev/better-auth/nextjs'
+import { headers } from 'next/headers'
 
-function isValidObjectId(id: string): boolean {
-  return /^[0-9a-fA-F]{24}$/.test(id);
-}
+import { api } from '@/convex/_generated/api'
+
+export const {
+  handler,
+  isAuthenticated,
+  getToken,
+  preloadAuthQuery,
+  fetchAuthQuery,
+  fetchAuthMutation,
+  fetchAuthAction,
+} = convexBetterAuthNextJs({
+  convexUrl: process.env.NEXT_PUBLIC_CONVEX_URL!,
+  convexSiteUrl: process.env.NEXT_PUBLIC_CONVEX_SITE_URL!,
+})
 
 export async function getCurrentUser() {
-  const session = await auth();
-  if (!session?.user) return null;
+  try {
+    const isAuth = await isAuthenticated()
+    if (!isAuth) return null
 
-  const { id, name, email } = session.user as {
-    id?: string;
-    name?: string | null;
-    email?: string | null;
-  };
-
-  if (!id || !isValidObjectId(id)) {
-    return null;
+    return await fetchAuthQuery(api.users.current)
+  } catch (error) {
+    return null
   }
-
-  return { id, name: name || "", email: email || "" };
 }

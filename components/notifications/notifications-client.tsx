@@ -1,84 +1,42 @@
-"use client";
+'use client'
 
-import { useState, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { NotificationList } from "@/components/notifications/notification-list";
-import {
-  getNotifications,
-  markAllNotificationsAsRead,
-  type NotificationDTO,
-} from "@/actions/notifications";
-import { ArrowLeft, Bell, CheckCheck } from "lucide-react";
-import Link from "next/link";
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { NotificationList } from '@/components/notifications/notification-list'
+import { ArrowLeft, Bell, CheckCheck, Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 
-interface NotificationsClientProps {
-  initialNotifications: NotificationDTO[];
-}
+export function NotificationsClient() {
+  const notifications = useQuery(api.notifications.getNotifications)
+  const markAllAsRead = useMutation(api.notifications.markAllAsRead)
 
-export function NotificationsClient({
-  initialNotifications,
-}: NotificationsClientProps) {
-  const [notifications, setNotifications] =
-    useState<NotificationDTO[]>(initialNotifications);
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastFetch, setLastFetch] = useState(Date.now());
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  useEffect(() => {
-    let isActive = true;
-
-    const pollNotifications = async () => {
-      if (!isActive) return;
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetch;
-      if (timeSinceLastFetch < 3000) return;
-      try {
-        const updated = await getNotifications();
-        if (
-          isActive &&
-          JSON.stringify(updated) !== JSON.stringify(notifications)
-        ) {
-          setNotifications(updated);
-          setLastFetch(now);
-        }
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
-
-    const interval = setInterval(pollNotifications, 3000);
-    return () => {
-      isActive = false;
-      clearInterval(interval);
-    };
-  }, [notifications, lastFetch]);
+  const isLoading = notifications === undefined
+  const unreadCount = notifications?.filter((n) => !n.read).length || 0
 
   const handleMarkAllAsRead = async () => {
-    setIsLoading(true);
     try {
-      await markAllNotificationsAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } finally {
-      setIsLoading(false);
+      await markAllAsRead()
+    } catch (error) {
+      console.error('Failed to mark all as read:', error)
     }
-  };
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-6 max-w-4xl">
-        <div className="flex items-center justify-between mb-6">
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto max-w-4xl p-6">
+        <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Link href="/dashboard">
               <Button variant="ghost" size="sm">
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Dashboard
               </Button>
             </Link>
             <div className="flex items-center gap-2">
-              <Bell className="h-6 w-6 text-primary" />
+              <Bell className="text-primary h-6 w-6" />
               <h1 className="text-2xl font-bold">Notifications</h1>
               {unreadCount > 0 && (
                 <Badge variant="destructive" className="ml-2">
@@ -88,14 +46,9 @@ export function NotificationsClient({
             </div>
           </div>
           {unreadCount > 0 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              disabled={isLoading}
-            >
-              <CheckCheck className="h-4 w-4 mr-2" />
-              {isLoading ? "Marking..." : "Mark all as read"}
+            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Mark all as read
             </Button>
           )}
         </div>
@@ -108,23 +61,24 @@ export function NotificationsClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {notifications.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-medium mb-2">
+            {isLoading ? (
+              <div className="text-muted-foreground flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : notifications.length === 0 ? (
+              <div className="text-muted-foreground py-8 text-center">
+                <Bell className="mx-auto mb-4 h-12 w-12 opacity-50" />
+                <h3 className="mb-2 text-lg font-medium">
                   No notifications yet
                 </h3>
                 <p>You&apos;ll see invitations and updates here.</p>
               </div>
             ) : (
-              <NotificationList
-                notifications={notifications}
-                onNotificationUpdate={setNotifications}
-              />
+              <NotificationList notifications={notifications} />
             )}
           </CardContent>
         </Card>
       </div>
     </div>
-  );
+  )
 }
