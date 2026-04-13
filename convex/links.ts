@@ -26,6 +26,7 @@ export const insertLinkAction = mutation({
       authorId: args.authorId,
       authorName: user?.name || 'System/AI',
       embedding: args.embedding,
+      status: args.embedding ? 'completed' : 'pending',
     })
 
     if (!args.embedding) {
@@ -91,5 +92,23 @@ export const getLinkById = internalQuery({
   args: { linkId: v.id('links') },
   handler: async (ctx, args) => {
     return await ctx.db.get(args.linkId)
+  },
+})
+
+export const updateLinkData = mutation({
+  args: {
+    linkId: v.id('links'),
+    scrapedContent: v.optional(v.string()),
+    embedding: v.optional(v.array(v.float64())),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('processing'),
+      v.literal('completed'),
+      v.literal('failed'),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const { linkId, ...updates } = args
+    await ctx.db.patch(linkId, updates)
   },
 })
