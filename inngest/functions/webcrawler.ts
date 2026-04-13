@@ -73,7 +73,7 @@ export const fetchAndVectorizeWebpageJob = inngest.createFunction(
       const embeddingsList = await step.run('Generate Embeddings', async () => {
         const embeddingsEngine = new GoogleGenerativeAIEmbeddings({
           apiKey: process.env.GEMINI_API_KEY,
-          model: 'text-embedding-004',
+          model: 'gemini-embedding-001',
         })
 
         return await embeddingsEngine.embedQuery(summary)
