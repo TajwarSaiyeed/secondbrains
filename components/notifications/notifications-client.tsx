@@ -1,68 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { NotificationList } from "@/components/notifications/notification-list";
-import {
-  getNotifications,
-  markAllNotificationsAsRead,
-  type NotificationDTO,
-} from "@/actions/notifications";
-import { ArrowLeft, Bell, CheckCheck } from "lucide-react";
+import { ArrowLeft, Bell, CheckCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
-interface NotificationsClientProps {
-  initialNotifications: NotificationDTO[];
-}
+export function NotificationsClient() {
+  const notifications = useQuery(api.notifications.getNotifications);
+  const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
-export function NotificationsClient({
-  initialNotifications,
-}: NotificationsClientProps) {
-  const [notifications, setNotifications] =
-    useState<NotificationDTO[]>(initialNotifications);
-  const [isLoading, setIsLoading] = useState(false);
-  const [lastFetch, setLastFetch] = useState(Date.now());
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  useEffect(() => {
-    let isActive = true;
-
-    const pollNotifications = async () => {
-      if (!isActive) return;
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetch;
-      if (timeSinceLastFetch < 3000) return;
-      try {
-        const updated = await getNotifications();
-        if (
-          isActive &&
-          JSON.stringify(updated) !== JSON.stringify(notifications)
-        ) {
-          setNotifications(updated);
-          setLastFetch(now);
-        }
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
-
-    const interval = setInterval(pollNotifications, 3000);
-    return () => {
-      isActive = false;
-      clearInterval(interval);
-    };
-  }, [notifications, lastFetch]);
+  // If undefined, loading
+  const isLoading = notifications === undefined;
+  const unreadCount = notifications?.filter((n) => !n.read).length || 0;
 
   const handleMarkAllAsRead = async () => {
-    setIsLoading(true);
     try {
-      await markAllNotificationsAsRead();
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    } finally {
-      setIsLoading(false);
+      await markAllAsRead();
+    } catch (error) {
+      console.error("Failed to mark all as read:", error);
     }
   };
 
@@ -92,10 +51,9 @@ export function NotificationsClient({
               variant="outline"
               size="sm"
               onClick={handleMarkAllAsRead}
-              disabled={isLoading}
             >
               <CheckCheck className="h-4 w-4 mr-2" />
-              {isLoading ? "Marking..." : "Mark all as read"}
+              Mark all as read
             </Button>
           )}
         </div>
@@ -108,7 +66,11 @@ export function NotificationsClient({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {notifications.length === 0 ? (
+            {isLoading ? (
+              <div className="flex justify-center items-center py-8 text-muted-foreground">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : notifications.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <h3 className="text-lg font-medium mb-2">
@@ -117,10 +79,7 @@ export function NotificationsClient({
                 <p>You&apos;ll see invitations and updates here.</p>
               </div>
             ) : (
-              <NotificationList
-                notifications={notifications}
-                onNotificationUpdate={setNotifications}
-              />
+              <NotificationList notifications={notifications} />
             )}
           </CardContent>
         </Card>

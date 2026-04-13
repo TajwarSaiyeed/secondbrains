@@ -8,7 +8,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, X } from "lucide-react";
-import { addNote, type ActionResult } from "@/actions/board-content";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useSession } from "@/lib/auth-client";
 
 interface AddNoteFormProps {
   boardId: string;
@@ -19,20 +21,26 @@ export function AddNoteForm({ boardId }: AddNoteFormProps) {
   const [content, setContent] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const createNote = useMutation(api.notes.createNote);
+  const { data: session } = useSession();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    const result: ActionResult = await addNote(boardId, content);
-
-    if ("error" in result) {
-      setError(result.error);
-      setIsLoading(false);
-    } else {
+    try {
+      await createNote({
+        boardId: boardId as any,
+        content,
+        authorId: session?.user?.id || "",
+        authorName: session?.user?.name || "Anonymous",
+      });
       setContent("");
       setIsOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add note");
+    } finally {
       setIsLoading(false);
     }
   }

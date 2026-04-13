@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Copy,
 } from "lucide-react";
+import { Reply } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import {
   deleteMessage,
@@ -31,21 +32,28 @@ import type { SyntaxHighlighterProps } from "react-syntax-highlighter";
 
 interface MessageBubbleProps {
   message: {
-    id: string;
+    id?: string;
+    _id?: string;
+    timestamp?: number;
+    parentMessage?: { content: string; authorName: string } | null;
+    audioUrl?: string;
+    audioStorageId?: string;
     content: string;
     authorId: string;
     authorName: string;
-    type: "user" | "ai";
-    createdAt: string;
+    type?: "user" | "ai";
+    createdAt?: string;
   };
   boardId: string;
   currentUserId: string;
+  onReply?: (msgId: string, authorName: string, content: string) => void;
 }
 
 export function MessageBubble({
   message,
   boardId,
   currentUserId,
+  onReply,
 }: MessageBubbleProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -62,14 +70,14 @@ export function MessageBubble({
   async function handleDelete() {
     if (!canDelete) return;
     setIsDeleting(true);
-    await deleteMessage(boardId, message.id);
+    await deleteMessage(boardId, message.id || message._id || "");
     setIsDeleting(false);
   }
 
   async function fetchAnswered() {
     try {
-      const res = await isMessageAnswered(boardId, message.id);
-      setIsAnswered(res.answered);
+      const res = await isMessageAnswered(boardId, message.id || message._id || "");
+      setIsAnswered(res.data || false);
     } catch (err) {
       console.error("Failed to check answer state", err);
     }
@@ -79,10 +87,10 @@ export function MessageBubble({
     setIsTogglingAnswer(true);
     try {
       if (isAnswered) {
-        await unmarkAnswer(boardId, message.id);
+        await unmarkAnswer(boardId, message.id || message._id || "");
         setIsAnswered(false);
       } else {
-        await markAnswer(boardId, message.id);
+        await markAnswer(boardId, message.id || message._id || "");
         setIsAnswered(true);
       }
     } catch (err) {
@@ -140,7 +148,7 @@ export function MessageBubble({
             {message.authorName}
           </span>
           <span className="text-xs text-muted-foreground">
-            {formatDistanceToNow(new Date(message.createdAt), {
+            {formatDistanceToNow(new Date(message.timestamp || message.createdAt || Date.now()), {
               addSuffix: true,
             })}
           </span>
@@ -156,6 +164,12 @@ export function MessageBubble({
                 <Copy className="h-4 w-4 mr-2" />
                 {isCopied ? "Copied!" : "Copy"}
               </DropdownMenuItem>
+                {onReply && (
+                  <DropdownMenuItem onClick={() => onReply(message.id || message._id || "", message.authorName, message.content)}>
+                    <Reply className="h-4 w-4 mr-2" />
+                    Reply
+                  </DropdownMenuItem>
+                )}
               {canDelete && (
                 <DropdownMenuItem
                   onClick={handleDelete}
@@ -186,6 +200,25 @@ export function MessageBubble({
               : "bg-muted"
           }`}
         >
+            {message.parentMessage && (
+              <div
+                className={`text-xs mb-2 p-2 rounded bg-background/20 border-l-2 ${
+                  isOwnMessage ? "border-primary-foreground" : "border-primary"
+                }`}
+              >
+                <div className="font-semibold mb-0.5">
+                  {message.parentMessage.authorName}
+                </div>
+                <div className="truncate opacity-80">
+                  {message.parentMessage.content}
+                </div>
+              </div>
+            )}
+            {message.audioUrl && (
+              <div className="mb-2">
+                <audio src={message.audioUrl} controls className="w-full max-w-[250px] h-10 flex" />
+              </div>
+            )}
           {isAI ? (
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown

@@ -30,8 +30,8 @@ interface FileCardProps {
 export function FileCard({ boardId, file, canDelete = false }: FileCardProps) {
   async function handleDownload() {
     const res = await downloadFile(file.id);
-    if ("error" in res) return;
-    const { base64, contentType, filename } = res;
+    if (!res.success || !res.data) return;
+    const { base64, contentType, filename } = res.data;
     const byteCharacters = atob(base64);
     const byteNumbers = new Array(byteCharacters.length);
     for (let i = 0; i < byteCharacters.length; i++) {

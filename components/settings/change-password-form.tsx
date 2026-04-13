@@ -32,11 +32,11 @@ export function ChangePasswordForm() {
 
   async function onSubmit(values: FormValues) {
     const fd = new FormData();
-    fd.set("currentPassword", values.currentPassword);
-    fd.set("newPassword", values.newPassword);
-    fd.set("confirmPassword", values.confirmPassword);
-    const res = await changePassword(fd);
-    if ("error" in res) {
+    const res = await changePassword(
+      values.currentPassword,
+      values.newPassword,
+    );
+    if ("error" in res && res.error) {
       toast.error(res.error);
     } else {
       toast.success("Password changed successfully");

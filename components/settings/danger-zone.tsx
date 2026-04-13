@@ -12,11 +12,7 @@ import { toast } from "sonner";
 
 const Schema = z.object({
   password: z.string().min(1, "Password is required"),
-  confirmation: z
-    .string()
-    .refine((v) => v === "DELETE", {
-      message: "Please type DELETE to confirm",
-    }),
+  confirmation: z.literal("DELETE"),
 });
 
 type FormValues = z.infer<typeof Schema>;
@@ -28,11 +24,8 @@ export function DangerZone() {
   });
 
   async function onSubmit(values: FormValues) {
-    const fd = new FormData();
-    fd.set("password", values.password);
-    fd.set("confirmation", values.confirmation);
-    const res = await deleteAccount(fd);
-    if ("error" in res) {
+    const res = await deleteAccount(values.password);
+    if ("error" in res && res.error) {
       toast.error(res.error);
     } else {
       toast.success("Account deleted. Redirecting...");

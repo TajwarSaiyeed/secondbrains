@@ -1,11 +1,11 @@
+"use client";
+
 import Link from "next/link";
-import { auth } from "@/auth";
 import { Brain, Bell, LogOut, Settings, User, Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { logoutUser } from "@/actions/auth/logout";
-import { getUnreadNotificationCount } from "@/actions/notifications";
+import { GlobalSearch } from "@/components/global-search";
 import {
   Sheet,
   SheetContent,
@@ -13,21 +13,27 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useQuery } from "convex/react";
+import { signOut, useSession } from "@/lib/auth-client";
+import { api } from "@/convex/_generated/api";
 
-export default async function Navbar() {
-  const session = await auth();
-  const isAuthed = !!session?.user;
-  const userName = session?.user?.name || "Guest";
-  const unreadCount = isAuthed ? await getUnreadNotificationCount() : 0;
+export default function Navbar() {
+  const session = useSession();
+  const user = useQuery(api.users.current);
+
+  // Note: Handle undefined gracefully (loading state)
+  const isAuthed = user !== null && user !== undefined;
+  const userName = user?.name || user?.email || "Guest";
+  const unreadCount = useQuery(api.notifications.countUnread) || 0;
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           {/* Logo - Responsive sizing */}
           <Link
             href={isAuthed ? "/dashboard" : "/"}
-            className="flex items-center gap-2 flex-shrink-0"
+            className="flex items-center gap-2 shrink-0"
           >
             <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
             <span className="text-lg sm:text-xl lg:text-2xl font-bold text-foreground">
@@ -39,6 +45,7 @@ export default async function Navbar() {
           <div className="hidden lg:flex items-center gap-2 xl:gap-4">
             {isAuthed ? (
               <>
+                <GlobalSearch />
                 <span className="text-sm text-muted-foreground max-w-32 truncate">
                   Welcome, {userName}
                 </span>
@@ -75,17 +82,15 @@ export default async function Navbar() {
                   </Button>
                 </Link>
                 <ThemeToggle />
-                <form action={logoutUser}>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    type="submit"
-                    className="cursor-pointer"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span className="sr-only">Logout</span>
-                  </Button>
-                </form>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => void signOut()}
+                  className="cursor-pointer"
+                >
+                  <LogOut className="h-4 w-4" />
+                  <span className="sr-only">Logout</span>
+                </Button>
               </>
             ) : (
               <>
@@ -168,12 +173,14 @@ export default async function Navbar() {
                         </Button>
                       </Link>
                       <div className="border-t pt-3 mt-3">
-                        <form action={logoutUser}>
-                          <Button variant="destructive" className="w-full">
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Logout
-                          </Button>
-                        </form>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => void signOut()}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </Button>
                       </div>
                     </div>
                   </SheetContent>
@@ -215,6 +222,7 @@ export default async function Navbar() {
                 <div className="mt-6 flex flex-col gap-3 px-5">
                   {isAuthed ? (
                     <>
+                      <GlobalSearch />
                       <div className="px-2 py-2 bg-muted/50 rounded-lg">
                         <span className="text-sm text-muted-foreground">
                           Welcome, {userName}
@@ -267,12 +275,14 @@ export default async function Navbar() {
                         <ThemeToggle />
                       </div>
                       <div className="border-t pt-3 mt-3">
-                        <form action={logoutUser}>
-                          <Button variant="destructive" className="w-full">
-                            <LogOut className="h-4 w-4 mr-2" />
-                            Logout
-                          </Button>
-                        </form>
+                        <Button
+                          variant="destructive"
+                          className="w-full"
+                          onClick={() => void signOut()}
+                        >
+                          <LogOut className="h-4 w-4 mr-2" />
+                          Logout
+                        </Button>
                       </div>
                     </>
                   ) : (

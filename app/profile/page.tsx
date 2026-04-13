@@ -1,15 +1,19 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth-server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { getCurrentUser } from "@/lib/auth";
 import { getUser } from "@/actions/profile";
 import { ProfileEditForm } from "../../components/profile/profile-edit-form";
 import { ArrowLeft, User } from "lucide-react";
 
 async function ProfileContent() {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) redirect("/login");
+  // Server-side auth check
+  const authenticated = await isAuthenticated();
+  if (!authenticated) {
+    redirect("/login?from=/profile");
+  }
+
   const user = await getUser();
   if (!user) redirect("/login");
 

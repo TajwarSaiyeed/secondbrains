@@ -18,7 +18,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { RegisterFormValues, registerSchema } from "@/schema/auth-schema";
-import { registerUserApi } from "@/actions/auth/client-api";
+import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
 
 interface RegisterFormProps {
@@ -55,24 +55,33 @@ export function RegisterForm({ inviteToken }: RegisterFormProps) {
     setIsLoading(true);
     setError("");
 
-    try {
-      const result = await registerUserApi(values);
-      if (!result?.status) {
-        setError(result?.message);
-        toast.error(result?.message || "Registration failed");
-      } else {
-        toast.success("Account created successfully");
-        if (inviteToken) {
-          router.push(`/invite/${inviteToken}`);
-        } else {
-          router.push("/login?message=Account created. Please sign in.");
-        }
-      }
-    } catch {
-      setError("An unexpected error occurred");
-      toast.error("An unexpected error occurred");
-    } finally {
+    if (values.password !== values.confirmPassword) {
+      setError("Passwords do not match");
+      toast.error("Passwords do not match");
       setIsLoading(false);
+      return;
+    }
+
+    const finalCallbackUrl = inviteToken
+      ? `/invite/${inviteToken}`
+      : "/dashboard";
+
+    try {
+      const result = await authClient.signUp.email({
+        email: values.email,
+        password: values.password,
+        name: values.name,
+      });
+
+      if (result) {
+        toast.success("Account created successfully");
+        router.push(finalCallbackUrl);
+      }
+    } catch (err: any) {
+      setIsLoading(false);
+      const message = err?.message || "Registration failed. Please try again.";
+      setError(message);
+      toast.error(message);
     }
   }
 

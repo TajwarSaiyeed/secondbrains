@@ -1,18 +1,25 @@
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { isAuthenticated, fetchAuthMutation } from "@/lib/auth-server";
+import { api } from "@/convex/_generated/api";
 import Link from "next/link";
 
 type Params = Promise<{ token: string }>;
 
 export default async function InvitePage({ params }: { params: Params }) {
   const { token } = await params;
-  const user = await getCurrentUser();
+  const isAuth = await isAuthenticated();
 
-  if (!user) redirect(`/login?invite=${token}`);
+  if (!isAuth) redirect(`/login?invite=${token}`);
 
-  const board = await prisma.board.findFirst({ where: { inviteToken: token } });
-  if (!board) {
+  try {
+    const boardId = await fetchAuthMutation(api.boards.joinViaInviteToken, {
+      token,
+    });
+
+    if (boardId) {
+      redirect(`/dashboard/${boardId}`);
+    }
+  } catch (error) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -27,22 +34,4 @@ export default async function InvitePage({ params }: { params: Params }) {
       </div>
     );
   }
-
-  const isMember = await prisma.boardMember.findFirst({
-    where: { boardId: board.id, userId: user.id },
-  });
-  if (!isMember) {
-    await prisma.boardMember.create({
-      data: {
-        boardId: board.id,
-        userId: user.id,
-        name: user.name,
-        email: user.email,
-        role: "member",
-        joinedAt: new Date(),
-      },
-    });
-  }
-
-  redirect(`/dashboard/${board.id}`);
 }

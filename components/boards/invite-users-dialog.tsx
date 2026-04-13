@@ -3,6 +3,8 @@
 import type React from "react";
 
 import { useState } from "react";
+import { useMutation, useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -17,19 +19,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { UserPlus, X, Mail, Copy, Check } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { inviteUsers, generateInvite } from "@/actions/boards";
 import { toast } from "sonner";
-
-type InviteLinkResult = { link: string } | { error: string };
-
-type InviteUsersResult = { success: boolean } | { error: string };
 
 export function InviteUsersDialog({
   boardId,
   boardTitle,
+  userName,
 }: {
   boardId: string;
   boardTitle?: string;
+  userName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [emails, setEmails] = useState<string[]>([]);
@@ -39,6 +38,11 @@ export function InviteUsersDialog({
   const [linkCopied, setLinkCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState("");
+
+  // Convex mutations and actions
+  const createEmailInvite = useMutation(api.invites.createEmailInvite);
+  const triggerInviteEmail = useAction(api.inngestTrigger.triggerInviteEmail);
+  const generateInviteToken = useMutation(api.invites.generateInviteToken);
 
   const addEmail = () => {
     if (
@@ -67,24 +71,60 @@ export function InviteUsersDialog({
   };
 
   const generateInviteLink = async () => {
-    const res: InviteLinkResult = await generateInvite(boardId);
-    if ("link" in res) setInviteLink(res.link);
+    try {
+      const result = await generateInviteToken({ boardId: boardId as any });
+      if (result && "link" in result) {
+        setInviteLink(result.link);
+        toast.success("Invite link generated");
+      }
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to generate link";
+      setError(message);
+      toast.error(message);
+    }
   };
 
   const handleSend = async () => {
     if (emails.length === 0) return;
     setIsSending(true);
     setError("");
-    const res: InviteUsersResult = await inviteUsers(boardId, emails, message);
-    if ("error" in res) {
-      setError(res.error);
-      toast.error(res.error);
-    } else {
+
+    try {
+      // Send email invites for each email address
+      for (const email of emails) {
+        // Create the invite record in DB
+        const inviteResult = await createEmailInvite({
+          boardId: boardId as any,
+          email,
+        });
+
+        if (inviteResult && "inviteId" in inviteResult) {
+          // Trigger the email sending via Inngest
+          await triggerInviteEmail({
+            boardId: boardId as any,
+            email,
+            boardTitle: boardTitle || "a shared board",
+            inviterName: userName || "SecondBrains User",
+            message: message || "",
+          });
+        }
+      }
+
+      // Clear form and close dialog
       setEmails([]);
       setMessage("");
-      toast.success("Invitations sent");
+      toast.success(
+        `Invitations sent to ${emails.length} ${emails.length === 1 ? "person" : "people"}`,
+      );
       setOpen(false);
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to send invitations";
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
+
     setIsSending(false);
   };
 

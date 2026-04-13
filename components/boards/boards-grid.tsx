@@ -1,55 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { BoardCard } from "@/components/boards/board-card";
-import { getBoards } from "@/actions/boards";
 import { CreateBoardDialog } from "@/components/boards/create-board-dialog";
 import { Brain } from "lucide-react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useEffect, useState } from "react";
 
-import type { BoardSummaryDTO } from "@/actions/boards";
-type Board = BoardSummaryDTO;
+export function BoardsGrid() {
+  const boards = useQuery(api.boards.listBoards);
 
-interface BoardsGridProps {
-  initialBoards: Board[];
-  currentUserId: string;
-}
+  // Quick user fetch if needed to track current user
+  // For precise current mapping if logic relies on it
+  // Usually Convex board queries resolve the owner matching natively
 
-export function BoardsGrid({ initialBoards, currentUserId }: BoardsGridProps) {
-  const [boards, setBoards] = useState<Board[]>(initialBoards || []);
-  const [lastFetch, setLastFetch] = useState(Date.now());
-  const [boardCount, setBoardCount] = useState(initialBoards?.length || 0);
-
-  useEffect(() => {
-    let isActive = true;
-
-    const pollBoards = async () => {
-      if (!isActive) return;
-
-      const now = Date.now();
-      const timeSinceLastFetch = now - lastFetch;
-
-      if (timeSinceLastFetch < 10000) return;
-
-      try {
-        const updatedBoards: Board[] = await getBoards();
-
-        if (isActive && updatedBoards.length !== boardCount) {
-          setBoards(updatedBoards);
-          setBoardCount(updatedBoards.length);
-          setLastFetch(now);
-        }
-      } catch (error) {
-        console.error("Error fetching boards:", error);
-      }
-    };
-
-    const interval = setInterval(pollBoards, 10000);
-
-    return () => {
-      isActive = false;
-      clearInterval(interval);
-    };
-  }, [boardCount, lastFetch]);
+  if (boards === undefined) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-pulse flex space-x-4">
+          <div className="flex-1 space-y-4 py-1">
+            <div className="h-4 bg-muted rounded w-3/4 mx-auto"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-muted rounded"></div>
+              <div className="h-4 bg-muted rounded w-5/6 mx-auto"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (boards.length === 0) {
     return (
@@ -72,7 +51,11 @@ export function BoardsGrid({ initialBoards, currentUserId }: BoardsGridProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {boards.map((board) => (
-        <BoardCard key={board.id} board={board} currentUserId={currentUserId} />
+        <BoardCard
+          key={board._id}
+          board={board}
+          currentUserId={board.ownerId}
+        />
       ))}
     </div>
   );

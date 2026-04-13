@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/providers/theme-provider";
+import { ConvexClientProvider } from "@/components/ConvexClientProvider";
+import { getToken } from "@/lib/auth-server";
 import { cn } from "@/lib/utils";
 import AuthProvider from "@/providers/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -26,27 +28,30 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const token = await getToken();
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={cn("antialiased", geistMono.variable, geistSans.variable)}
       >
         <AuthProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <Navbar />
-            {children}
-            <Toaster richColors closeButton position="top-right" />
-          </ThemeProvider>
+          <ConvexClientProvider initialToken={token}>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Navbar />
+              {children}
+              <Toaster richColors closeButton position="top-right" />
+            </ThemeProvider>
+          </ConvexClientProvider>
         </AuthProvider>
       </body>
     </html>

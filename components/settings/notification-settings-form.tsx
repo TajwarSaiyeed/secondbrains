@@ -32,11 +32,11 @@ export function NotificationSettingsForm({
   });
 
   async function onSubmit(values: FormValues) {
-    const fd = new FormData();
-    if (values.emailNotifications) fd.set("emailNotifications", "on");
-    if (values.aiSuggestions) fd.set("aiSuggestions", "on");
-    const res = await updateSettings(fd);
-    if ("error" in res) {
+    const res = await updateSettings({
+      emailNotifications: values.emailNotifications,
+      aiSuggestions: values.aiSuggestions,
+    });
+    if ("error" in res && res.error) {
       toast.error(res.error);
     } else {
       toast.success("Preferences updated");

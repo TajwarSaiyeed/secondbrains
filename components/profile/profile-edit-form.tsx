@@ -42,10 +42,7 @@ export function ProfileEditForm({ user }: ProfileEditFormProps) {
   });
 
   async function onSubmit(values: FormValues) {
-    const fd = new FormData();
-    fd.set("name", values.name);
-    fd.set("email", values.email);
-    const result = await updateProfile(fd);
+    const result = await updateProfile(values);
     if ("error" in result && result.error) {
       toast.error(result.error);
     } else {

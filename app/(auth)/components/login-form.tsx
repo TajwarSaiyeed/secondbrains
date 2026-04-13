@@ -18,13 +18,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { LoginFormValues, loginSchema } from "@/schema/auth-schema";
-import { loginUserApi } from "@/actions/auth/client-api";
+import { authClient } from "@/lib/auth-client";
 import { toast } from "sonner";
-
-interface LoginFormProps {
-  inviteToken?: string;
-  callbackUrl?: string;
-}
+import { useRouter } from "next/navigation";
 
 interface LoginFormProps {
   inviteToken?: string;
@@ -38,6 +34,7 @@ export function LoginForm({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -55,13 +52,20 @@ export function LoginForm({
       ? `/invite/${inviteToken}`
       : callbackUrl;
 
-    const result = await loginUserApi(values, finalCallbackUrl);
+    try {
+      const result = await authClient.signIn.email({
+        email: values.email,
+        password: values.password,
+      });
 
-    if (result?.status) {
-      toast.success("Signed in successfully");
-    } else {
+      if (result) {
+        toast.success("Signed in successfully");
+        router.push(finalCallbackUrl);
+      }
+    } catch (err) {
       setIsLoading(false);
-      const message = result?.message || "Invalid credentials";
+      const message =
+        err instanceof Error ? err.message : "Invalid email or password";
       setError(message);
       toast.error(message);
     }

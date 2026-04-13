@@ -14,7 +14,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Sparkles, Calendar, MessageSquare, Loader2 } from "lucide-react";
-import { summarizeDiscussion, type ActionResult } from "@/actions/discussions";
 
 interface SummarizeDialogProps {
   boardId: string;
@@ -33,26 +32,14 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
 
     setLoading(true);
 
-    const options: { days?: number; startDate?: string; endDate?: string } = {};
-
-    if (summaryType === "days" && days) {
-      options.days = parseInt(days.toString());
-    } else if (summaryType === "dateRange" && startDate && endDate) {
-      options.startDate = startDate;
-      options.endDate = endDate;
-    }
-
     try {
-      const result: ActionResult = await summarizeDiscussion(boardId, options);
-      if ("error" in result) {
-        console.error(result.error);
-      } else {
-        setOpen(false);
-        setDays(2);
-        setStartDate("");
-        setEndDate("");
-        setSummaryType("days");
-      }
+      // TODO: Implement discussion summarization with Convex mutation
+      console.log("Summary feature not yet implemented");
+      setOpen(false);
+      setDays(2);
+      setStartDate("");
+      setEndDate("");
+      setSummaryType("days");
     } catch (error) {
       console.error("Error summarizing discussion:", error);
     } finally {

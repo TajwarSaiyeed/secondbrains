@@ -13,19 +13,21 @@ import { formatDistanceToNow } from "date-fns";
 
 interface BoardCardProps {
   board: {
-    id: string;
+    _id?: string;
+    id?: string;
     title: string;
-    description: string | null;
-    members: Array<{
+    description?: string | null;
+    members?: Array<{
       userId: string;
-      name: string | null;
-      email: string | null;
+      name?: string | null;
+      email?: string | null;
       role: string;
     }>;
-    notes: Array<{ id: string }>;
-    links: Array<{ id: string }>;
-    files: Array<{ id: string }>;
-    updatedAt: string;
+    notes?: Array<{ _id?: string; id?: string }>;
+    links?: Array<{ _id?: string; id?: string }>;
+    files?: Array<{ _id?: string; id?: string }>;
+    _creationTime?: number;
+    updatedAt?: string;
     ownerId: string;
   };
   currentUserId: string;
@@ -33,9 +35,11 @@ interface BoardCardProps {
 
 export function BoardCard({ board, currentUserId }: BoardCardProps) {
   const isOwner = board.ownerId === currentUserId;
-  const memberCount = board.members.length;
+  const memberCount = board.members?.length || 0;
   const contentCount =
-    board.notes.length + board.links.length + board.files.length;
+    (board.notes?.length || 0) +
+    (board.links?.length || 0) +
+    (board.files?.length || 0);
 
   return (
     <Link href={`/dashboard/${board.id}`}>
@@ -67,7 +71,7 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
                 {memberCount} member{memberCount !== 1 ? "s" : ""}
               </span>
               <div className="flex -space-x-1 ml-2">
-                {board.members.slice(0, 3).map((member) => (
+                {(board.members || []).slice(0, 3).map((member) => (
                   <Avatar
                     key={member.userId}
                     className="h-6 w-6 border-2 border-background"
@@ -102,9 +106,14 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm text-muted-foreground">
                 Updated{" "}
-                {formatDistanceToNow(new Date(board.updatedAt), {
-                  addSuffix: true,
-                })}
+                {formatDistanceToNow(
+                  new Date(
+                    board.updatedAt || board._creationTime || Date.now(),
+                  ),
+                  {
+                    addSuffix: true,
+                  },
+                )}
               </span>
             </div>
           </div>

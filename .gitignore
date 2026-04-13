@@ -49,3 +49,8 @@ package-lock.json
 yarn.lock
 .next
 .idea
+
+.agents
+.claude
+AGENTS.md
+CLAUDE.md

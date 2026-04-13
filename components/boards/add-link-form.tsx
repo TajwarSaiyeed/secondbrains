@@ -10,7 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Plus, X } from "lucide-react";
-import { addLink, type ActionResult } from "@/actions/board-content";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { useSession } from "@/lib/auth-client";
+import { Inngest } from "inngest";
+
+const inngest = new Inngest({ id: "secondbrains-app" });
 
 interface AddLinkFormProps {
   boardId: string;
@@ -23,27 +28,41 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
   const [description, setDescription] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const insertLink = useMutation(api.links.insertLinkAction);
+  const { data: session } = useSession();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    const result: ActionResult = await addLink(
-      boardId,
-      url,
-      title,
-      description
-    );
+    try {
+      // 1. Insert the link into Convex immediately for real-time UI update
+      await insertLink({
+        boardId: boardId as any,
+        url,
+        title,
+        description,
+        authorId: session?.user?.id || "",
+      });
 
-    if ("error" in result) {
-      setError(result.error);
-      setIsLoading(false);
-    } else {
+      // 2. Trigger the Inngest background job for AI scraping and vectorization
+      await inngest.send({
+        name: "board/link.added",
+        data: {
+          url,
+          boardId: boardId,
+          authorId: session?.user?.id,
+        },
+      });
+
       setUrl("");
       setTitle("");
       setDescription("");
       setIsOpen(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to add link");
+    } finally {
       setIsLoading(false);
     }
   }

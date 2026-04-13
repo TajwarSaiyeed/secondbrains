@@ -19,10 +19,8 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import {
-  uploadFileWithQueue,
-  type FileUploadResult,
-} from "@/actions/board-content";
+import { useMutation } from "convex/react";
+import { api } from "@/convex/_generated/api";
 
 interface QueuedFile {
   file: File;
@@ -38,6 +36,8 @@ export function AddFileForm({ boardId }: { boardId: string }) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const generateUploadUrl = useMutation(api.files.generateUploadUrl);
+  const saveFileMetaData = useMutation(api.files.saveFileMetaData);
 
   const MAX_FILES = 30; // Limit to 30 files at a time
 
@@ -69,15 +69,72 @@ export function AddFileForm({ boardId }: { boardId: string }) {
     }
   };
 
+  const uploadFile = async (queuedFile: QueuedFile) => {
+    try {
+      setQueuedFiles((prev) =>
+        prev.map((f) =>
+          f.id === queuedFile.id ? { ...f, status: "uploading" } : f,
+        ),
+      );
+
+      // 1. Generate upload URL
+      const uploadUrl = await generateUploadUrl();
+
+      // 2. Upload file to Convex storage
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers: { "Content-Type": queuedFile.file.type },
+        body: queuedFile.file,
+      });
+
+      if (!response.ok) throw new Error("Upload failed");
+
+      const { storageId } = await response.json();
+
+      // 3. Save metadata to Convex
+      setQueuedFiles((prev) =>
+        prev.map((f) =>
+          f.id === queuedFile.id ? { ...f, status: "processing" } : f,
+        ),
+      );
+
+      await saveFileMetaData({
+        boardId: boardId as any,
+        name: queuedFile.file.name,
+        size: queuedFile.file.size,
+        type: queuedFile.file.type,
+        storageId: storageId,
+      });
+    } catch (err) {
+      console.error(err);
+      setQueuedFiles((prev) =>
+        prev.map((f) =>
+          f.id === queuedFile.id
+            ? { ...f, status: "error", error: (err as Error).message }
+            : f,
+        ),
+      );
+    }
+  };
+
+  const processQueue = async () => {
+    setIsProcessing(true);
+    const waitingFiles = queuedFiles.filter((f) => f.status === "waiting");
+    for (const file of waitingFiles) {
+      await uploadFile(file);
+    }
+    setIsProcessing(false);
+  };
+
   const addFilesToQueue = (newFiles: File[]) => {
     const currentCount = queuedFiles.filter(
-      (f) => f.status !== "completed" && f.status !== "error"
+      (f) => f.status !== "completed" && f.status !== "error",
     ).length;
     const remainingSlots = MAX_FILES - currentCount;
 
     if (remainingSlots <= 0) {
       setError(
-        `Maximum ${MAX_FILES} files can be uploaded at once. Please wait for current uploads to complete.`
+        `Maximum ${MAX_FILES} files can be uploaded at once. Please wait for current uploads to complete.`,
       );
       return;
     }
@@ -95,7 +152,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
 
     if (remainingSlots < newFiles.length) {
       setError(
-        `Only ${filesToAdd.length} files added. Maximum ${MAX_FILES} files can be uploaded at once.`
+        `Only ${filesToAdd.length} files added. Maximum ${MAX_FILES} files can be uploaded at once.`,
       );
     }
   };
@@ -106,126 +163,59 @@ export function AddFileForm({ boardId }: { boardId: string }) {
 
   const updateFileStatus = (id: string, updates: Partial<QueuedFile>) => {
     setQueuedFiles((prev) =>
-      prev.map((qf) => (qf.id === id ? { ...qf, ...updates } : qf))
+      prev.map((qf) => (qf.id === id ? { ...qf, ...updates } : qf)),
     );
   };
 
-  const processQueue = async () => {
-    const waitingFiles = queuedFiles.filter((qf) => qf.status === "waiting");
-    if (waitingFiles.length === 0) return;
+  const canUpload =
+    queuedFiles.filter((f) => f.status !== "completed" && f.status !== "error")
+      .length > 0 && !isProcessing;
 
-    setIsProcessing(true);
-
-    for (const queuedFile of waitingFiles) {
-      try {
-        // Update to uploading status
-        updateFileStatus(queuedFile.id, { status: "uploading", progress: 25 });
-
-        // Create FormData for this specific file
-        const formData = new FormData();
-        formData.append("file", queuedFile.file);
-
-        // Call upload action
-        updateFileStatus(queuedFile.id, { status: "processing", progress: 75 });
-        const result: FileUploadResult = await uploadFileWithQueue(
-          boardId,
-          formData
-        );
-
-        if ("error" in result) {
-          updateFileStatus(queuedFile.id, {
-            status: "error",
-            progress: 0,
-            error: result.error,
-          });
-        } else {
-          updateFileStatus(queuedFile.id, {
-            status: "completed",
-            progress: 100,
-          });
-        }
-
-        // Small delay between files to show progress
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      } catch (err) {
-        updateFileStatus(queuedFile.id, {
-          status: "error",
-          progress: 0,
-          error: err instanceof Error ? err.message : "Upload failed",
-        });
-      }
-    }
-
-    setIsProcessing(false);
-
-    // Auto-remove completed files after 3 seconds
-    setTimeout(() => {
-      setQueuedFiles((prev) => prev.filter((qf) => qf.status !== "completed"));
-    }, 3000);
-  };
-
-  const getFileIcon = (file: File) => {
+  function getFileIcon(file: File) {
     if (file.type.startsWith("image/"))
-      return <ImageIcon className="h-4 w-4" />;
-    const name = file.name.toLowerCase();
-    if (file.type.includes("pdf") || name.endsWith(".pdf"))
-      return <FileText className="h-4 w-4" />;
-    if (
-      name.endsWith(".doc") ||
-      name.endsWith(".docx") ||
-      name.endsWith(".txt")
-    )
-      return <FileText className="h-4 w-4" />;
-    if (name.endsWith(".csv") || name.endsWith(".xlsx"))
-      return <FileText className="h-4 w-4" />;
-    return <File className="h-4 w-4" />;
-  };
+      return <ImageIcon className="h-4 w-4 text-blue-500" />;
+    if (file.type === "application/pdf")
+      return <FileText className="h-4 w-4 text-red-500" />;
+    return <File className="h-4 w-4 text-gray-500" />;
+  }
 
-  const getStatusIcon = (status: QueuedFile["status"]) => {
+  function formatFileSize(bytes: number) {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+  }
+
+  function getStatusIcon(status: QueuedFile["status"]) {
     switch (status) {
-      case "waiting":
-        return <Clock className="h-4 w-4 text-gray-400" />;
-      case "uploading":
-      case "processing":
-        return <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />;
       case "completed":
         return <CheckCircle className="h-4 w-4 text-green-500" />;
       case "error":
         return <AlertCircle className="h-4 w-4 text-red-500" />;
+      case "uploading":
+      case "processing":
+        return <Loader2 className="h-4 w-4 text-cyan-500 animate-spin" />;
       default:
-        return null;
+        return <Clock className="h-4 w-4 text-gray-400" />;
     }
-  };
+  }
 
-  const getStatusText = (queuedFile: QueuedFile) => {
-    switch (queuedFile.status) {
-      case "waiting":
-        return "Waiting...";
+  function getStatusText(file: QueuedFile) {
+    if (file.error) return file.error;
+    switch (file.status) {
       case "uploading":
         return "Uploading...";
       case "processing":
-        return "Extracting content...";
+        return "Processing...";
       case "completed":
-        return "Complete!";
+        return "Completed";
       case "error":
-        return queuedFile.error || "Error occurred";
+        return "Error";
       default:
-        return "";
+        return "Waiting...";
     }
-  };
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return (
-      Number.parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
-    );
-  };
-
-  const waitingFiles = queuedFiles.filter((qf) => qf.status === "waiting");
-  const canUpload = waitingFiles.length > 0 && !isProcessing;
+  }
 
   return (
     <Card>
@@ -266,7 +256,7 @@ export function AddFileForm({ boardId }: { boardId: string }) {
               asChild
               disabled={
                 queuedFiles.filter(
-                  (f) => f.status !== "completed" && f.status !== "error"
+                  (f) => f.status !== "completed" && f.status !== "error",
                 ).length >= MAX_FILES
               }
             >
@@ -349,16 +339,18 @@ export function AddFileForm({ boardId }: { boardId: string }) {
               Processing{" "}
               {
                 queuedFiles.filter(
-                  (f) => f.status === "uploading" || f.status === "processing"
+                  (f) => f.status === "uploading" || f.status === "processing",
                 ).length
               }{" "}
               files...
             </>
           ) : (
             `Upload ${
-              waitingFiles.length > 0
-                ? `${waitingFiles.length} File${
-                    waitingFiles.length > 1 ? "s" : ""
+              queuedFiles.filter((f) => f.status === "waiting").length > 0
+                ? `${queuedFiles.filter((f) => f.status === "waiting").length} File${
+                    queuedFiles.filter((f) => f.status === "waiting").length > 1
+                      ? "s"
+                      : ""
                   }`
                 : "Files"
             }`

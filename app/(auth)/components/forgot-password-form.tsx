@@ -38,7 +38,7 @@ export function ForgotPasswordForm() {
     setIsLoading(true);
     setError("");
 
-    const result = await sendPasswordResetEmail({ email: values.email });
+    const result = await sendPasswordResetEmail(values.email);
 
     if (!result?.status) {
       setError(result?.message || "Failed to send reset email");

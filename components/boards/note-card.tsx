@@ -16,12 +16,14 @@ import { deleteNote } from "@/actions/board-content";
 
 interface NoteCardProps {
   note: {
-    id: string;
+    _id?: string;
+    id?: string;
     content: string;
     authorId: string;
     authorName: string;
-    createdAt: string;
-    updatedAt: string;
+    _creationTime?: number;
+    createdAt?: string;
+    updatedAt?: string;
   };
   boardId: string;
   currentUserId: string;
@@ -30,12 +32,13 @@ interface NoteCardProps {
 export function NoteCard({ note, boardId, currentUserId }: NoteCardProps) {
   const [isDeleting, setIsDeleting] = useState(false);
   const canDelete = note.authorId === currentUserId;
+  const noteId = note._id || note.id || "";
 
   async function handleDelete() {
     if (!canDelete) return;
 
     setIsDeleting(true);
-    await deleteNote(boardId, note.id);
+    await deleteNote(boardId, noteId);
     setIsDeleting(false);
   }
 
@@ -56,9 +59,12 @@ export function NoteCard({ note, boardId, currentUserId }: NoteCardProps) {
             <div>
               <p className="text-sm font-medium">{note.authorName}</p>
               <p className="text-xs text-muted-foreground">
-                {formatDistanceToNow(new Date(note.createdAt), {
-                  addSuffix: true,
-                })}
+                {formatDistanceToNow(
+                  new Date(note.createdAt || note._creationTime || Date.now()),
+                  {
+                    addSuffix: true,
+                  },
+                )}
               </p>
             </div>
           </div>

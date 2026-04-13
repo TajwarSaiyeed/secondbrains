@@ -1,53 +1,35 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
 import os from "os";
 
 export async function GET() {
-  let dbStatus: "connected" | "disconnected" = "disconnected";
-  let dbError: string | null = null;
-  let dbStats: {
-    users?: number;
-    boards?: number;
-    notifications?: number;
-    error?: string;
-  } | null = null;
+  let convexStatus: "connected" | "disconnected" = "connected";
+  let convexError: string | null = null;
 
+  // Basic connectivity check: verify NEXT_PUBLIC_CONVEX_URL is configured
   try {
-    // Check database connectivity by pinging it
-    await prisma.$runCommandRaw({ ping: 1 });
-    dbStatus = "connected";
-
-    // Get database stats
-    try {
-      const [userCount, boardCount, notificationCount] = await Promise.all([
-        prisma.user.count(),
-        prisma.board.count(),
-        prisma.notification.count(),
-      ]);
-      dbStats = {
-        users: userCount,
-        boards: boardCount,
-        notifications: notificationCount,
-      };
-    } catch {
-      // Don't fail the health check if stats collection fails
-      dbStats = { error: "Could not fetch stats" };
+    if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
+      throw new Error("NEXT_PUBLIC_CONVEX_URL not configured");
     }
+    // Additional validation: ensure it's a valid URL
+    new URL(process.env.NEXT_PUBLIC_CONVEX_URL);
   } catch (e) {
-    dbError = e instanceof Error ? e.message : "Unknown DB error";
+    convexStatus = "disconnected";
+    convexError =
+      e instanceof Error ? e.message : "Invalid Convex configuration";
   }
 
   const memoryUsage = process.memoryUsage();
   const healthInfo = {
-    status: dbStatus === "connected" ? "healthy" : "unhealthy",
+    status: convexStatus === "connected" ? "healthy" : "unhealthy",
     timestamp: new Date().toISOString(),
     uptime: Math.round(process.uptime()),
     environment: process.env.NODE_ENV,
     version: process.env.npm_package_version || "1.0.0",
-    database: {
-      status: dbStatus,
-      error: dbError,
-      stats: dbStats,
+    backend: {
+      type: "Convex",
+      status: convexStatus,
+      url: process.env.NEXT_PUBLIC_CONVEX_URL ? "configured" : "missing",
+      error: convexError,
     },
     memory: {
       usedMb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
@@ -71,6 +53,6 @@ export async function GET() {
   };
 
   return NextResponse.json(healthInfo, {
-    status: dbStatus === "connected" ? 200 : 503,
+    status: convexStatus === "connected" ? 200 : 503,
   });
 }

@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
+import { isAuthenticated } from "@/lib/auth-server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,16 +10,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getCurrentUser } from "@/lib/auth";
 import { getUser } from "@/actions/profile";
 import { ChangePasswordForm } from "../../components/settings/change-password-form";
 import { NotificationSettingsForm } from "../../components/settings/notification-settings-form";
 import { DangerZone } from "../../components/settings/danger-zone";
 import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
+import { TwoFactorSection } from "../../components/settings/two-factor-section";
 
 async function SettingsContent() {
-  const currentUser = await getCurrentUser();
-  if (!currentUser) redirect("/login");
+  // Server-side auth check
+  const authenticated = await isAuthenticated();
+  if (!authenticated) {
+    redirect("/login?from=/settings");
+  }
+
   const user = await getUser();
   if (!user) redirect("/login");
 
@@ -42,11 +47,18 @@ async function SettingsContent() {
             <CardHeader>
               <CardTitle>Security</CardTitle>
               <CardDescription>
-                Update your password to keep your account secure.
+                Update your password and enable two-factor authentication.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ChangePasswordForm />
+            <CardContent className="space-y-6">
+              <div>
+                <h3 className="text-sm font-semibold mb-3">Password</h3>
+                <ChangePasswordForm />
+              </div>
+              <div className="border-t pt-6">
+                <h3 className="text-sm font-semibold mb-3">Two-Factor Authentication</h3>
+                <TwoFactorSection />
+              </div>
             </CardContent>
           </Card>
 

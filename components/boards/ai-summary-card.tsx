@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useAction } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Sparkles, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { generateAISummary } from "@/actions/board-content";
+import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -26,14 +28,24 @@ export function AISummaryCard({ boardId, aiSummary }: AISummaryCardProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
+  const triggerSummary = useAction(api.inngestTrigger.triggerBoardSummary);
 
   async function handleGenerateSummary() {
     setIsGenerating(true);
     setError("");
 
-    const result = await generateAISummary(boardId);
-    if ("error" in result) {
-      setError(result.error || "");
+    try {
+      const result = await triggerSummary({ boardId: boardId as any });
+      if (result.success) {
+        toast.success("Summary generation queued! Check back in a moment.");
+      } else {
+        setError("Failed to queue summary generation");
+        toast.error("Failed to queue summary generation");
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      setError(message);
+      toast.error(message);
     }
 
     setIsGenerating(false);
@@ -64,8 +76,8 @@ export function AISummaryCard({ boardId, aiSummary }: AISummaryCardProps) {
             {isGenerating
               ? "Generating..."
               : aiSummary
-              ? "Regenerate"
-              : "Generate"}
+                ? "Regenerate"
+                : "Generate"}
           </Button>
         </div>
       </CardHeader>

@@ -1,17 +1,18 @@
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
-import { getBoards, type BoardSummaryDTO } from "@/actions/boards";
+import { isAuthenticated } from "@/lib/auth-server";
 import { Input } from "@/components/ui/input";
 import { CreateBoardDialog } from "@/components/boards/create-board-dialog";
+// Note: BoardsGrid should be converted to 'use client' and use `useQuery(api.boards.listBoards)`
 import { BoardsGrid } from "@/components/boards/boards-grid";
 import Loading from "./loading";
 
 async function DashboardContent() {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  const boards = await getBoards();
-
+  // Server-side auth check (double protection via middleware + page level)
+  const authenticated = await isAuthenticated();
+  if (!authenticated) {
+    redirect("/login?from=/dashboard");
+  }
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
@@ -30,10 +31,8 @@ async function DashboardContent() {
         <Input placeholder="Search your boards..." />
       </div>
 
-      <BoardsGrid
-        initialBoards={boards as BoardSummaryDTO[]}
-        currentUserId={user.id}
-      />
+      {/* BoardsGrid is now responsible for handling its own real-time Convex state */}
+      <BoardsGrid />
     </div>
   );
 }
