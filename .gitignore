@@ -54,3 +54,5 @@ yarn.lock
 .claude
 AGENTS.md
 CLAUDE.md
+ARCHITECTURE.md
+IMPLEMENTATION_GUIDE.md
