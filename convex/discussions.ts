@@ -15,6 +15,11 @@ export const sendMessage = mutation({
     const userId = identity?.subject
     if (!userId) throw new Error('Unauthorized')
 
+    const board = await ctx.db.get(args.boardId)
+    if (!board) throw new Error('Board not found')
+
+    const isOwner = board.ownerId === userId
+
     // Verify membership
     const membership = await ctx.db
       .query('boardMembers')
@@ -22,7 +27,8 @@ export const sendMessage = mutation({
       .filter((q) => q.eq(q.field('userId'), userId))
       .first()
 
-    if (!membership) throw new Error('You are not a member of this board')
+    if (!isOwner && !membership)
+      throw new Error('You are not a member of this board')
 
     let finalAudioUrl = args.audioUrl
     if (args.audioStorageId) {
