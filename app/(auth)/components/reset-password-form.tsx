@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, CheckCircle, XCircle } from "lucide-react";
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react'
 import {
   Form,
   FormControl,
@@ -16,52 +16,52 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { resetSchema, ResetValues } from "@/schema/auth-schema";
-import { resetPassword } from "@/actions/auth/password";
-import { toast } from "sonner";
+} from '@/components/ui/form'
+import { resetSchema, ResetValues } from '@/schema/auth-schema'
+import { resetPassword } from '@/actions/auth/password'
+import { toast } from 'sonner'
 
 interface ResetPasswordFormProps {
-  token: string;
+  token: string
 }
 
 export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const form = useForm<ResetValues>({
     resolver: zodResolver(resetSchema),
-    defaultValues: { password: "", confirmPassword: "" },
-    mode: "onChange",
-  });
+    defaultValues: { password: '', confirmPassword: '' },
+    mode: 'onChange',
+  })
 
-  const password = form.watch("password");
-  const confirmPassword = form.watch("confirmPassword");
+  const password = form.watch('password')
+  const confirmPassword = form.watch('confirmPassword')
 
   const requirements = [
-    { text: "At least 8 characters", met: (password || "").length >= 8 },
-    { text: "Contains uppercase letter", met: /[A-Z]/.test(password || "") },
-    { text: "Contains lowercase letter", met: /[a-z]/.test(password || "") },
-    { text: "Contains number", met: /\d/.test(password || "") },
-  ];
+    { text: 'At least 8 characters', met: (password || '').length >= 8 },
+    { text: 'Contains uppercase letter', met: /[A-Z]/.test(password || '') },
+    { text: 'Contains lowercase letter', met: /[a-z]/.test(password || '') },
+    { text: 'Contains number', met: /\d/.test(password || '') },
+  ]
 
   async function onSubmit(values: ResetValues) {
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true)
+    setError('')
 
-    const result = await resetPassword(token, values.password);
+    const result = await resetPassword(token, values.password)
 
     if (!result?.status) {
-      const msg = result?.message || "Failed to reset password";
-      setError(msg);
-      toast.error(msg);
-      setIsLoading(false);
+      const msg = result?.message || 'Failed to reset password'
+      setError(msg)
+      toast.error(msg)
+      setIsLoading(false)
     } else {
-      toast.success("Password reset successful. Please sign in.");
-      router.push("/login?message=Password reset successful");
+      toast.success('Password reset successful. Please sign in.')
+      router.push('/login?message=Password reset successful')
     }
   }
 
@@ -78,7 +78,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <div className="relative">
                   <Input
                     {...field}
-                    type={showPassword ? "text" : "password"}
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="Enter your new password"
                     disabled={isLoading}
                   />
@@ -86,7 +86,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                    className="absolute top-1/2 right-2 h-8 w-8 -translate-y-1/2"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -103,7 +103,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
               <FormMessage />
 
               {password && (
-                <div className="space-y-1 mt-2">
+                <div className="mt-2 space-y-1">
                   {requirements.map((req, index) => (
                     <div
                       key={index}
@@ -112,11 +112,11 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                       {req.met ? (
                         <CheckCircle className="h-3 w-3 text-green-500" />
                       ) : (
-                        <XCircle className="h-3 w-3 text-muted-foreground" />
+                        <XCircle className="text-muted-foreground h-3 w-3" />
                       )}
                       <span
                         className={
-                          req.met ? "text-green-600" : "text-muted-foreground"
+                          req.met ? 'text-green-600' : 'text-muted-foreground'
                         }
                       >
                         {req.text}
@@ -139,7 +139,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                 <div className="relative">
                   <Input
                     {...field}
-                    type={showConfirmPassword ? "text" : "password"}
+                    type={showConfirmPassword ? 'text' : 'password'}
                     placeholder="Confirm your new password"
                     disabled={isLoading}
                   />
@@ -147,7 +147,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                    className="absolute top-1/2 right-2 h-8 w-8 -translate-y-1/2"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
@@ -162,7 +162,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
               <FormMessage />
 
               {confirmPassword && (
-                <div className="flex items-center gap-2 text-sm mt-1">
+                <div className="mt-1 flex items-center gap-2 text-sm">
                   {password === confirmPassword ? (
                     <>
                       <CheckCircle className="h-3 w-3 text-green-500" />
@@ -170,7 +170,7 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
                     </>
                   ) : (
                     <>
-                      <XCircle className="h-3 w-3 text-muted-foreground" />
+                      <XCircle className="text-muted-foreground h-3 w-3" />
                       <span className="text-muted-foreground">
                         Passwords do not match
                       </span>
@@ -193,9 +193,9 @@ export function ResetPasswordForm({ token }: ResetPasswordFormProps) {
           className="w-full"
           disabled={isLoading || !form.formState.isValid}
         >
-          {isLoading ? "Resetting..." : "Reset Password"}
+          {isLoading ? 'Resetting...' : 'Reset Password'}
         </Button>
       </form>
     </Form>
-  );
+  )
 }

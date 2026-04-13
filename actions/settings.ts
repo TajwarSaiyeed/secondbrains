@@ -1,13 +1,13 @@
-"use server";
+'use server'
 
-import { fetchAuthMutation } from "@/lib/auth-server";
-import { api } from "@/convex/_generated/api";
+import { fetchAuthMutation } from '@/lib/auth-server'
+import { api } from '@/convex/_generated/api'
 
 export type ActionResult<T = void> = {
-  success: boolean;
-  data?: T;
-  error?: string;
-};
+  success: boolean
+  data?: T
+  error?: string
+}
 
 export async function updateSettings(
   settings: Record<string, boolean>,
@@ -16,10 +16,10 @@ export async function updateSettings(
     await fetchAuthMutation(api.users.updateSettings, {
       emailNotifications: settings.emailNotifications,
       aiSuggestions: settings.aiSuggestions,
-    });
-    return { success: true };
+    })
+    return { success: true }
   } catch (error) {
-    return { success: false, error: String(error) };
+    return { success: false, error: String(error) }
   }
 }
 
@@ -30,10 +30,10 @@ export async function changePassword(
   try {
     return {
       success: false,
-      error: "Use Better Auth client for password change",
-    };
+      error: 'Use Better Auth client for password change',
+    }
   } catch (error) {
-    return { success: false, error: String(error) };
+    return { success: false, error: String(error) }
   }
 }
 
@@ -43,9 +43,9 @@ export async function deleteAccount(
   try {
     return {
       success: false,
-      error: "Use Better Auth client for account deletion",
-    };
+      error: 'Use Better Auth client for account deletion',
+    }
   } catch (error) {
-    return { success: false, error: String(error) };
+    return { success: false, error: String(error) }
   }
 }

@@ -1,19 +1,15 @@
-import { httpRouter } from "convex/server";
-import { createClient, convexAdapter } from "@convex-dev/better-auth";
-import { convex } from "@convex-dev/better-auth/plugins";
-import { components, internal } from "./_generated/api";
-import { betterAuth } from "better-auth";
-import {
-  ActionCtx,
-  internalMutation,
-  internalQuery,
-} from "./_generated/server";
-import { v } from "convex/values";
-import authConfig from "./auth.config";
+import { httpRouter } from 'convex/server'
+import { createClient, convexAdapter } from '@convex-dev/better-auth'
+import { convex } from '@convex-dev/better-auth/plugins'
+import { components, internal } from './_generated/api'
+import { betterAuth } from 'better-auth'
+import { ActionCtx, internalMutation, internalQuery } from './_generated/server'
+import { v } from 'convex/values'
+import authConfig from './auth.config'
 
-const http = httpRouter();
+const http = httpRouter()
 
-const client = createClient(components.betterAuth);
+const client = createClient(components.betterAuth)
 
 client.registerRoutes(http, (ctx) =>
   betterAuth({
@@ -42,13 +38,13 @@ client.registerRoutes(http, (ctx) =>
                 createdAt: user.createdAt.getTime(),
                 updatedAt: user.updatedAt.getTime(),
               },
-            );
+            )
           },
         },
       },
     },
   }),
-);
+)
 
 export const syncUserToApp = internalMutation({
   args: {
@@ -62,12 +58,12 @@ export const syncUserToApp = internalMutation({
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
-      .query("user")
-      .filter((q) => q.eq(q.field("email"), args.email))
-      .first();
-    if (existing) return;
+      .query('user')
+      .filter((q) => q.eq(q.field('email'), args.email))
+      .first()
+    if (existing) return
 
-    await ctx.db.insert("user", {
+    await ctx.db.insert('user', {
       userId: args.userId,
       name: args.name,
       email: args.email,
@@ -75,19 +71,19 @@ export const syncUserToApp = internalMutation({
       image: args.image,
       createdAt: args.createdAt,
       updatedAt: args.updatedAt,
-      role: "user",
-    });
+      role: 'user',
+    })
   },
-});
+})
 
 export const listComponentUsers = internalQuery({
   args: {},
   handler: async (ctx) => {
     return await ctx.runQuery(components.betterAuth.adapter.findMany, {
-      model: "user",
+      model: 'user',
       paginationOpts: { cursor: null, numItems: 100 },
-    });
+    })
   },
-});
+})
 
-export default http;
+export default http

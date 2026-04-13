@@ -1,97 +1,97 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { useState } from 'react'
+import { useAction } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Id } from '@/convex/_generated/dataModel'
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, ChevronDown, ChevronUp } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Bot, Send, User, ChevronDown, ChevronUp } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 
 type Message = {
-  role: "user" | "model";
-  content: string;
-  sources?: { id: string; title: string; url: string | null; type: string }[];
-};
+  role: 'user' | 'model'
+  content: string
+  sources?: { id: string; title: string; url: string | null; type: string }[]
+}
 
 export function BoardChat({ boardId }: { boardId: string }) {
   const [messages, setMessages] = useState<Message[]>([
     {
-      role: "model",
+      role: 'model',
       content:
         "Hello! I'm integrated with this board's knowledge base. Ask me anything and I'll find the answers for you using the notes, links, and scraped content saved here.",
     },
-  ]);
-  const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
-  const [expandedSources, setExpandedSources] = useState<number | null>(null);
+  ])
+  const [input, setInput] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const [expandedSources, setExpandedSources] = useState<number | null>(null)
 
-  const sendMessage = useAction(api.ai.chatWithBoard);
+  const sendMessage = useAction(api.ai.chatWithBoard)
 
   const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping) return;
+    e.preventDefault()
+    if (!input.trim() || isTyping) return
 
-    const userMessage = input.trim();
-    setInput("");
+    const userMessage = input.trim()
+    setInput('')
 
     const updatedMessages: Message[] = [
       ...messages,
-      { role: "user", content: userMessage },
-    ];
-    setMessages(updatedMessages);
-    setIsTyping(true);
+      { role: 'user', content: userMessage },
+    ]
+    setMessages(updatedMessages)
+    setIsTyping(true)
 
     try {
       const history = updatedMessages
         .slice(1)
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((m) => ({ role: m.role, content: m.content }))
 
       const response = await sendMessage({
-        boardId: boardId as Id<"boards">,
+        boardId: boardId as Id<'boards'>,
         message: userMessage,
         history,
-      });
+      })
 
       setMessages([
         ...updatedMessages,
         {
-          role: "model",
+          role: 'model',
           content: response.text,
           sources: response.sources,
         },
-      ]);
+      ])
     } catch (error) {
-      console.error("Chat Failed:", error);
+      console.error('Chat Failed:', error)
       setMessages([
         ...updatedMessages,
         {
-          role: "model",
+          role: 'model',
           content:
-            "Sorry, I encountered an error connecting to the AI or retrieving knowledge. Please try again.",
+            'Sorry, I encountered an error connecting to the AI or retrieving knowledge. Please try again.',
         },
-      ]);
+      ])
     } finally {
-      setIsTyping(false);
+      setIsTyping(false)
     }
-  };
+  }
 
   return (
-    <Card className="flex flex-col h-150 border-primary/20 shadow-lg">
-      <CardHeader className="border-b bg-muted/30 pb-4">
+    <Card className="border-primary/20 flex h-150 flex-col shadow-lg">
+      <CardHeader className="bg-muted/30 border-b pb-4">
         <div className="flex items-center gap-2">
-          <div className="p-2 bg-primary/10 rounded-full">
-            <Bot className="w-5 h-5 text-primary" />
+          <div className="bg-primary/10 rounded-full p-2">
+            <Bot className="text-primary h-5 w-5" />
           </div>
           <div>
             <CardTitle className="text-lg">Board AI Assistant</CardTitle>
@@ -101,44 +101,44 @@ export function BoardChat({ boardId }: { boardId: string }) {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col p-4 overflow-hidden gap-4">
-        <ScrollArea className="flex-1 pr-4 -mr-4">
+      <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden p-4">
+        <ScrollArea className="-mr-4 flex-1 pr-4">
           <div className="space-y-4 pb-4">
             {messages.map((msg, index) => (
               <div
                 key={index}
                 className={cn(
-                  "flex items-start gap-3",
-                  msg.role === "user" ? "flex-row-reverse" : "",
+                  'flex items-start gap-3',
+                  msg.role === 'user' ? 'flex-row-reverse' : '',
                 )}
               >
                 <div
                   className={cn(
-                    "shrink-0 p-2 rounded-full",
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted",
+                    'shrink-0 rounded-full p-2',
+                    msg.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted',
                   )}
                 >
-                  {msg.role === "user" ? (
-                    <User className="w-4 h-4" />
+                  {msg.role === 'user' ? (
+                    <User className="h-4 w-4" />
                   ) : (
-                    <Bot className="w-4 h-4" />
+                    <Bot className="h-4 w-4" />
                   )}
                 </div>
                 <div
                   className={cn(
-                    "rounded-2xl px-4 py-2 max-w-[85%] text-sm",
-                    msg.role === "user"
-                      ? "bg-primary text-primary-foreground rounded-tr-sm"
-                      : "bg-muted/50 border rounded-tl-sm space-y-3",
+                    'max-w-[85%] rounded-2xl px-4 py-2 text-sm',
+                    msg.role === 'user'
+                      ? 'bg-primary text-primary-foreground rounded-tr-sm'
+                      : 'bg-muted/50 space-y-3 rounded-tl-sm border',
                   )}
                 >
                   <div className="whitespace-pre-wrap">{msg.content}</div>
 
                   {/* Render Sources if available */}
                   {msg.sources && msg.sources.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-border/50">
+                    <div className="border-border/50 mt-3 border-t pt-3">
                       <button
                         type="button"
                         onClick={() =>
@@ -146,12 +146,12 @@ export function BoardChat({ boardId }: { boardId: string }) {
                             expandedSources === index ? null : index,
                           )
                         }
-                        className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors"
+                        className="text-muted-foreground hover:text-foreground flex items-center text-xs transition-colors"
                       >
                         {expandedSources === index ? (
-                          <ChevronUp className="w-3 h-3 mr-1" />
+                          <ChevronUp className="mr-1 h-3 w-3" />
                         ) : (
-                          <ChevronDown className="w-3 h-3 mr-1" />
+                          <ChevronDown className="mr-1 h-3 w-3" />
                         )}
                         {msg.sources.length} knowledge sources cited
                       </button>
@@ -161,13 +161,13 @@ export function BoardChat({ boardId }: { boardId: string }) {
                           {msg.sources.map((src, i) => (
                             <a
                               key={i}
-                              href={src.url || "#"}
+                              href={src.url || '#'}
                               target="_blank"
                               rel="noopener noreferrer"
                               className={cn(
-                                "flex items-center justify-between p-2 rounded bg-background/50 border text-xs hover:bg-muted transition-colors",
+                                'bg-background/50 hover:bg-muted flex items-center justify-between rounded border p-2 text-xs transition-colors',
                                 !src.url &&
-                                  "pointer-events-none cursor-default",
+                                  'pointer-events-none cursor-default',
                               )}
                             >
                               <span className="truncate pr-2 font-medium">
@@ -175,7 +175,7 @@ export function BoardChat({ boardId }: { boardId: string }) {
                               </span>
                               <Badge
                                 variant="secondary"
-                                className="capitalize text-[10px] shrink-0"
+                                className="shrink-0 text-[10px] capitalize"
                               >
                                 {src.type}
                               </Badge>
@@ -190,13 +190,13 @@ export function BoardChat({ boardId }: { boardId: string }) {
             ))}
             {isTyping && (
               <div className="flex items-start gap-3">
-                <div className="shrink-0 p-2 rounded-full bg-muted">
-                  <Bot className="w-4 h-4" />
+                <div className="bg-muted shrink-0 rounded-full p-2">
+                  <Bot className="h-4 w-4" />
                 </div>
-                <div className="bg-muted/50 border rounded-2xl rounded-tl-sm px-4 py-3 text-sm flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce" />
-                  <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:0.2s]" />
-                  <span className="w-1.5 h-1.5 bg-foreground/50 rounded-full animate-bounce [animation-delay:0.4s]" />
+                <div className="bg-muted/50 flex items-center gap-1 rounded-2xl rounded-tl-sm border px-4 py-3 text-sm">
+                  <span className="bg-foreground/50 h-1.5 w-1.5 animate-bounce rounded-full" />
+                  <span className="bg-foreground/50 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:0.2s]" />
+                  <span className="bg-foreground/50 h-1.5 w-1.5 animate-bounce rounded-full [animation-delay:0.4s]" />
                 </div>
               </div>
             )}
@@ -205,7 +205,7 @@ export function BoardChat({ boardId }: { boardId: string }) {
 
         <form
           onSubmit={handleSend}
-          className="flex items-center gap-2 mt-auto pt-2"
+          className="mt-auto flex items-center gap-2 pt-2"
         >
           <Input
             value={input}
@@ -219,11 +219,11 @@ export function BoardChat({ boardId }: { boardId: string }) {
             size="icon"
             disabled={!input.trim() || isTyping}
           >
-            <Send className="w-4 h-4" />
+            <Send className="h-4 w-4" />
             <span className="sr-only">Send</span>
           </Button>
         </form>
       </CardContent>
     </Card>
-  );
+  )
 }

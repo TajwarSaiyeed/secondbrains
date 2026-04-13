@@ -1,16 +1,16 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Button } from "@/components/ui/button";
-import { TwoFactorSetup } from "@/components/auth/two-factor-setup";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
+import { useState } from 'react'
+import { useQuery } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Button } from '@/components/ui/button'
+import { TwoFactorSetup } from '@/components/auth/two-factor-setup'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { CheckCircle, AlertTriangle, Loader2 } from 'lucide-react'
 
 export function TwoFactorSection() {
-  const [setupOpen, setSetupOpen] = useState(false);
-  const status = useQuery(api.auth2fa.get2FAStatus, {});
+  const [setupOpen, setSetupOpen] = useState(false)
+  const status = useQuery(api.auth2fa.get2FAStatus, {})
 
   if (!status) {
     return (
@@ -18,7 +18,7 @@ export function TwoFactorSection() {
         <Loader2 className="h-4 w-4 animate-spin" />
         Loading 2FA status...
       </div>
-    );
+    )
   }
 
   if (status.enabled) {
@@ -56,11 +56,11 @@ export function TwoFactorSection() {
           onOpenChange={setSetupOpen}
           onSuccess={() => {
             // Refresh status on success
-            window.location.reload();
+            window.location.reload()
           }}
         />
       </div>
-    );
+    )
   }
 
   return (
@@ -85,9 +85,9 @@ export function TwoFactorSection() {
         onOpenChange={setSetupOpen}
         onSuccess={() => {
           // Refresh status on success
-          window.location.reload();
+          window.location.reload()
         }}
       />
     </div>
-  );
+  )
 }

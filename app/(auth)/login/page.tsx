@@ -1,41 +1,41 @@
-import { Suspense } from "react";
-import Link from "next/link";
-import { Brain } from "lucide-react";
+import { Suspense } from 'react'
+import Link from 'next/link'
+import { Brain } from 'lucide-react'
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { LoginForm } from "../components/login-form";
+} from '@/components/ui/card'
+import { LoginForm } from '../components/login-form'
 
 interface PageProps {
   searchParams: Promise<{
-    invite?: string;
-    message?: string;
-    callbackUrl?: string;
-  }>;
+    invite?: string
+    message?: string
+    callbackUrl?: string
+  }>
 }
 
 export default async function LoginPage({ searchParams }: PageProps) {
-  const { invite, message, callbackUrl } = await searchParams;
+  const { invite, message, callbackUrl } = await searchParams
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+    <div className="bg-background flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 mb-6">
-            <Brain className="h-8 w-8 text-primary" />
-            <span className="text-2xl font-bold text-foreground">
+        <div className="mb-8 text-center">
+          <Link href="/" className="mb-6 inline-flex items-center gap-2">
+            <Brain className="text-primary h-8 w-8" />
+            <span className="text-foreground text-2xl font-bold">
               SecondBrains
             </span>
           </Link>
-          <h1 className="text-2xl font-bold text-foreground">Welcome back</h1>
+          <h1 className="text-foreground text-2xl font-bold">Welcome back</h1>
           <p className="text-muted-foreground mt-2">
             {invite
-              ? "Sign in to join the board"
-              : "Sign in to your SecondBrains account"}
+              ? 'Sign in to join the board'
+              : 'Sign in to your SecondBrains account'}
           </p>
         </div>
 
@@ -48,7 +48,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
           </CardHeader>
           <CardContent>
             {message && (
-              <div className="mb-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-md">
+              <div className="mb-4 rounded-md border border-green-200 bg-green-50 p-3 dark:border-green-800 dark:bg-green-950/20">
                 <p className="text-sm text-green-700 dark:text-green-300">
                   {message}
                 </p>
@@ -59,10 +59,10 @@ export default async function LoginPage({ searchParams }: PageProps) {
             </Suspense>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-muted-foreground">
-                Don&apos;t have an account?{" "}
+              <p className="text-muted-foreground text-sm">
+                Don&apos;t have an account?{' '}
                 <Link
-                  href={invite ? `/register?invite=${invite}` : "/register"}
+                  href={invite ? `/register?invite=${invite}` : '/register'}
                   className="text-primary hover:underline"
                 >
                   Sign up
@@ -73,5 +73,5 @@ export default async function LoginPage({ searchParams }: PageProps) {
         </Card>
       </div>
     </div>
-  );
+  )
 }

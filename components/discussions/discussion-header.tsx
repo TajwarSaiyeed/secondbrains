@@ -1,24 +1,24 @@
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Users } from "lucide-react";
-import { SummarizeDialog } from "./summarize-dialog";
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { ArrowLeft, Users } from 'lucide-react'
+import { SummarizeDialog } from './summarize-dialog'
 
 interface DiscussionHeaderProps {
   board: {
-    id: string;
-    title: string;
+    id: string
+    title: string
     members: Array<{
-      userId: string;
-      name: string | null;
-      role: string;
-    }>;
-  };
+      userId: string
+      name: string | null
+      role: string
+    }>
+  }
 }
 
 export function DiscussionHeader({ board }: DiscussionHeaderProps) {
   return (
-    <div className="border-b border-border p-4 bg-background">
+    <div className="border-border bg-background border-b p-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
@@ -27,18 +27,18 @@ export function DiscussionHeader({ board }: DiscussionHeaderProps) {
             </Link>
           </Button>
           <div>
-            <h1 className="text-xl font-semibold text-foreground">
+            <h1 className="text-foreground text-xl font-semibold">
               {board.title}
             </h1>
-            <p className="text-sm text-muted-foreground">Discussion</p>
+            <p className="text-muted-foreground text-sm">Discussion</p>
           </div>
         </div>
 
         <div className="flex items-center gap-3">
           <SummarizeDialog boardId={board.id} />
           <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">
+            <Users className="text-muted-foreground h-4 w-4" />
+            <span className="text-muted-foreground text-sm">
               {board.members.length} members
             </span>
             <Badge variant="secondary" className="ml-2">
@@ -48,5 +48,5 @@ export function DiscussionHeader({ board }: DiscussionHeaderProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

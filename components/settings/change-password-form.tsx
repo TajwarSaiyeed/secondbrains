@@ -1,51 +1,48 @@
-"use client";
+'use client'
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { changePassword } from "@/actions/settings";
-import { Save } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { toast } from "sonner";
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { changePassword } from '@/actions/settings'
+import { Save } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { toast } from 'sonner'
 
 const Schema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
+    currentPassword: z.string().min(1, 'Current password is required'),
     newPassword: z
       .string()
-      .min(8, "New password must be at least 8 characters"),
-    confirmPassword: z.string().min(1, "Please confirm the new password"),
+      .min(8, 'New password must be at least 8 characters'),
+    confirmPassword: z.string().min(1, 'Please confirm the new password'),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match",
-  });
+    path: ['confirmPassword'],
+    message: 'Passwords do not match',
+  })
 
-type FormValues = z.infer<typeof Schema>;
+type FormValues = z.infer<typeof Schema>
 
 export function ChangePasswordForm() {
   const { register, handleSubmit, formState, reset } = useForm<FormValues>({
     resolver: zodResolver(Schema),
-  });
+  })
 
   async function onSubmit(values: FormValues) {
-    const fd = new FormData();
-    const res = await changePassword(
-      values.currentPassword,
-      values.newPassword,
-    );
-    if ("error" in res && res.error) {
-      toast.error(res.error);
+    const fd = new FormData()
+    const res = await changePassword(values.currentPassword, values.newPassword)
+    if ('error' in res && res.error) {
+      toast.error(res.error)
     } else {
-      toast.success("Password changed successfully");
-      reset({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      toast.success('Password changed successfully')
+      reset({ currentPassword: '', newPassword: '', confirmPassword: '' })
     }
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 max-w-xl">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-xl space-y-4">
       <div className="space-y-2">
         <Label htmlFor="currentPassword">Current Password</Label>
         <Input
@@ -53,7 +50,7 @@ export function ChangePasswordForm() {
           type="password"
           placeholder="Enter current password"
           disabled={formState.isSubmitting}
-          {...register("currentPassword")}
+          {...register('currentPassword')}
         />
         {formState.errors.currentPassword && (
           <p className="text-xs text-red-500">
@@ -69,7 +66,7 @@ export function ChangePasswordForm() {
             type="password"
             placeholder="Enter new password"
             disabled={formState.isSubmitting}
-            {...register("newPassword")}
+            {...register('newPassword')}
           />
           {formState.errors.newPassword && (
             <p className="text-xs text-red-500">
@@ -84,7 +81,7 @@ export function ChangePasswordForm() {
             type="password"
             placeholder="Re-enter new password"
             disabled={formState.isSubmitting}
-            {...register("confirmPassword")}
+            {...register('confirmPassword')}
           />
           {formState.errors.confirmPassword && (
             <p className="text-xs text-red-500">
@@ -96,8 +93,8 @@ export function ChangePasswordForm() {
 
       <Button type="submit" disabled={formState.isSubmitting} className="gap-2">
         <Save className="h-4 w-4" />
-        {formState.isSubmitting ? "Saving..." : "Save Changes"}
+        {formState.isSubmitting ? 'Saving...' : 'Save Changes'}
       </Button>
     </form>
-  );
+  )
 }

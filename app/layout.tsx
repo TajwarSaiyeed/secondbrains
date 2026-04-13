@@ -1,43 +1,43 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { ThemeProvider } from "@/providers/theme-provider";
-import { ConvexClientProvider } from "@/components/ConvexClientProvider";
-import { getToken } from "@/lib/auth-server";
-import { cn } from "@/lib/utils";
-import AuthProvider from "@/providers/auth-provider";
-import { Toaster } from "@/components/ui/sonner";
-import Navbar from "@/components/navbar";
+import type { Metadata } from 'next'
+import { Geist, Geist_Mono } from 'next/font/google'
+import './globals.css'
+import { ThemeProvider } from '@/providers/theme-provider'
+import { ConvexClientProvider } from '@/components/ConvexClientProvider'
+import { getToken } from '@/lib/auth-server'
+import { cn } from '@/lib/utils'
+import AuthProvider from '@/providers/auth-provider'
+import { Toaster } from '@/components/ui/sonner'
+import Navbar from '@/components/navbar'
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
+})
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
+})
 
 export const metadata: Metadata = {
-  title: "SecondBrains - AI-Powered Collaborative Study Platform",
+  title: 'SecondBrains - AI-Powered Collaborative Study Platform',
   description:
-    "Collaborate on study boards, share notes, and get AI-powered insights for better learning",
+    'Collaborate on study boards, share notes, and get AI-powered insights for better learning',
   icons: {
-    icon: "/logo.jpg",
+    icon: '/logo.jpg',
   },
-};
+}
 
 export default async function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
-  const token = await getToken();
+  const token = await getToken()
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={cn("antialiased", geistMono.variable, geistSans.variable)}
+        className={cn('antialiased', geistMono.variable, geistSans.variable)}
       >
         <AuthProvider>
           <ConvexClientProvider initialToken={token}>
@@ -55,5 +55,5 @@ export default async function RootLayout({
         </AuthProvider>
       </body>
     </html>
-  );
+  )
 }

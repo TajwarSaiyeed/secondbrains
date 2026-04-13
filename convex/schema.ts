@@ -1,5 +1,5 @@
-import { defineSchema, defineTable } from "convex/server";
-import { v } from "convex/values";
+import { defineSchema, defineTable } from 'convex/server'
+import { v } from 'convex/values'
 
 export default defineSchema({
   user: defineTable({
@@ -17,15 +17,15 @@ export default defineSchema({
     telegram: v.optional(v.string()),
     totalPoints: v.optional(v.number()),
   })
-    .index("by_email", ["email"])
-    .index("by_userId", ["userId"]),
+    .index('by_email', ['email'])
+    .index('by_userId', ['userId']),
 
   // User Settings Profile extended
   userSettings: defineTable({
     userId: v.string(),
     emailNotifications: v.boolean(),
     aiSuggestions: v.boolean(),
-  }).index("by_user", ["userId"]),
+  }).index('by_user', ['userId']),
 
   // Boards (Workspaces)
   boards: defineTable({
@@ -37,23 +37,23 @@ export default defineSchema({
     linksData: v.optional(v.any()),
     notesData: v.optional(v.any()),
   })
-    .index("by_owner", ["ownerId"])
-    .index("by_invite", ["inviteToken"]),
+    .index('by_owner', ['ownerId'])
+    .index('by_invite', ['inviteToken']),
 
   boardMembers: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     userId: v.string(),
     name: v.string(),
     email: v.string(),
-    role: v.union(v.literal("owner"), v.literal("member")),
+    role: v.union(v.literal('owner'), v.literal('member')),
     joinedAt: v.number(),
   })
-    .index("by_board", ["boardId"])
-    .index("by_user", ["userId"]),
+    .index('by_board', ['boardId'])
+    .index('by_user', ['userId']),
 
   // Documents & Notes (Contains Vector Search target)
   notes: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     content: v.string(),
     authorId: v.string(),
     authorName: v.string(),
@@ -61,20 +61,20 @@ export default defineSchema({
     sourceFileName: v.optional(v.string()),
     embedding: v.optional(v.array(v.float64())), // Native Vector embedding
   })
-    .index("by_board", ["boardId"])
-    .index("by_author", ["authorId"])
-    .searchIndex("search_content", {
-      searchField: "content",
-      filterFields: ["boardId"],
+    .index('by_board', ['boardId'])
+    .index('by_author', ['authorId'])
+    .searchIndex('search_content', {
+      searchField: 'content',
+      filterFields: ['boardId'],
     })
-    .vectorIndex("by_embedding", {
-      vectorField: "embedding",
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
       dimensions: 768, // Using Gemini's text-embedding-004 dimension
-      filterFields: ["boardId"], // Allow filtering search queries by specific board
+      filterFields: ['boardId'], // Allow filtering search queries by specific board
     }),
 
   links: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     url: v.string(),
     title: v.string(),
     description: v.string(),
@@ -83,101 +83,101 @@ export default defineSchema({
     authorName: v.string(),
     embedding: v.optional(v.array(v.float64())),
   })
-    .index("by_board", ["boardId"])
-    .searchIndex("search_title", {
-      searchField: "title",
-      filterFields: ["boardId"],
+    .index('by_board', ['boardId'])
+    .searchIndex('search_title', {
+      searchField: 'title',
+      filterFields: ['boardId'],
     })
-    .searchIndex("search_description", {
-      searchField: "description",
-      filterFields: ["boardId"],
+    .searchIndex('search_description', {
+      searchField: 'description',
+      filterFields: ['boardId'],
     })
-    .searchIndex("search_scraped", {
-      searchField: "scrapedContent",
-      filterFields: ["boardId"],
+    .searchIndex('search_scraped', {
+      searchField: 'scrapedContent',
+      filterFields: ['boardId'],
     })
-    .vectorIndex("by_embedding", {
-      vectorField: "embedding",
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
       dimensions: 768,
-      filterFields: ["boardId"],
+      filterFields: ['boardId'],
     }),
 
   // Uploaded Files Meta
   fileMetas: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     name: v.string(),
     size: v.number(),
     type: v.string(),
-    storageId: v.id("_storage"), // Convex native storage ID
+    storageId: v.id('_storage'), // Convex native storage ID
     url: v.string(),
     uploadedBy: v.string(),
     extractedContent: v.optional(v.string()),
   })
-    .index("by_board", ["boardId"])
-    .index("by_uploader", ["uploadedBy"]),
+    .index('by_board', ['boardId'])
+    .index('by_uploader', ['uploadedBy']),
 
   aiSummaries: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     content: v.string(),
     generatedBy: v.string(),
-  }).index("by_board", ["boardId"]),
+  }).index('by_board', ['boardId']),
 
   pendingInvites: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     email: v.string(),
     invitedBy: v.string(),
     message: v.optional(v.string()),
   })
-    .index("by_board", ["boardId"])
-    .index("by_email", ["email"]),
+    .index('by_board', ['boardId'])
+    .index('by_email', ['email']),
 
   messages: defineTable({
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     content: v.string(),
     authorId: v.string(),
     authorName: v.string(),
     createdAt: v.number(),
-    replyToId: v.optional(v.id("messages")),
+    replyToId: v.optional(v.id('messages')),
     audioUrl: v.optional(v.string()), // For voice messages
-    audioStorageId: v.optional(v.id("_storage")),
+    audioStorageId: v.optional(v.id('_storage')),
   })
-    .index("by_board", ["boardId"])
-    .index("by_reply", ["replyToId"])
-    .searchIndex("search_content", {
-      searchField: "content",
-      filterFields: ["boardId"],
+    .index('by_board', ['boardId'])
+    .index('by_reply', ['replyToId'])
+    .searchIndex('search_content', {
+      searchField: 'content',
+      filterFields: ['boardId'],
     }),
 
   answers: defineTable({
-    boardId: v.id("boards"),
-    messageId: v.id("messages"),
+    boardId: v.id('boards'),
+    messageId: v.id('messages'),
     markedById: v.string(),
     markedAt: v.number(),
   })
-    .index("by_board", ["boardId"])
-    .index("by_message", ["messageId"]),
+    .index('by_board', ['boardId'])
+    .index('by_message', ['messageId']),
 
   notifications: defineTable({
     userId: v.string(),
     type: v.union(
-      v.literal("board_invite"),
-      v.literal("board_joined"),
-      v.literal("message_mention"),
+      v.literal('board_invite'),
+      v.literal('board_joined'),
+      v.literal('message_mention'),
     ),
     title: v.string(),
     message: v.string(),
     data: v.optional(v.any()),
     read: v.boolean(),
-  }).index("by_user", ["userId"]),
+  }).index('by_user', ['userId']),
 
   // ========== TWO-FACTOR AUTHENTICATION (2FA) ==========
   userAuthFactors: defineTable({
     userId: v.string(),
     type: v.union(
-      v.literal("totp"),
-      v.literal("sms"),
-      v.literal("email"),
-      v.literal("backup_codes"),
+      v.literal('totp'),
+      v.literal('sms'),
+      v.literal('email'),
+      v.literal('backup_codes'),
     ),
     secret: v.optional(v.string()), // Base32-encoded secret for TOTP
     phoneNumber: v.optional(v.string()), // For SMS 2FA
@@ -185,7 +185,7 @@ export default defineSchema({
     verified: v.boolean(),
     createdAt: v.number(),
     lastUsedAt: v.optional(v.number()),
-  }).index("by_user", ["userId"]),
+  }).index('by_user', ['userId']),
 
   // ========== TEAMS & RBAC ==========
   teams: defineTable({
@@ -198,26 +198,26 @@ export default defineSchema({
       requireTwoFactor: v.boolean(),
       dataRetentionDays: v.optional(v.number()),
     }),
-  }).index("by_owner", ["ownerId"]),
+  }).index('by_owner', ['ownerId']),
 
   teamMembers: defineTable({
-    teamId: v.id("teams"),
+    teamId: v.id('teams'),
     userId: v.string(),
     role: v.union(
-      v.literal("owner"),
-      v.literal("admin"),
-      v.literal("member"),
-      v.literal("viewer"),
+      v.literal('owner'),
+      v.literal('admin'),
+      v.literal('member'),
+      v.literal('viewer'),
     ),
     permissions: v.optional(v.array(v.string())), // Custom per-user overrides
     joinedAt: v.number(),
     invitedBy: v.optional(v.string()),
   })
-    .index("by_team", ["teamId"])
-    .index("by_user", ["userId"]),
+    .index('by_team', ['teamId'])
+    .index('by_user', ['userId']),
 
   teamInvites: defineTable({
-    teamId: v.id("teams"),
+    teamId: v.id('teams'),
     email: v.string(),
     role: v.string(),
     invitedBy: v.string(),
@@ -226,8 +226,8 @@ export default defineSchema({
     expiresAt: v.number(),
     accepted: v.boolean(),
   })
-    .index("by_team", ["teamId"])
-    .index("by_email", ["email"]),
+    .index('by_team', ['teamId'])
+    .index('by_email', ['email']),
 
   // ========== AUDIT LOGGING ==========
   auditLogs: defineTable({
@@ -236,8 +236,8 @@ export default defineSchema({
     resourceType: v.string(), // "board", "note", "user", "team"
     resourceId: v.string(),
     resourceName: v.optional(v.string()),
-    teamId: v.optional(v.id("teams")),
-    boardId: v.optional(v.id("boards")),
+    teamId: v.optional(v.id('teams')),
+    boardId: v.optional(v.id('boards')),
     changes: v.optional(
       v.object({
         before: v.optional(v.any()),
@@ -246,13 +246,13 @@ export default defineSchema({
     ),
     ipAddress: v.optional(v.string()),
     userAgent: v.optional(v.string()),
-    status: v.union(v.literal("success"), v.literal("failure")),
+    status: v.union(v.literal('success'), v.literal('failure')),
     errorMessage: v.optional(v.string()),
     timestamp: v.number(),
     metadata: v.optional(v.any()),
   })
-    .index("by_user", ["userId"])
-    .index("by_resource", ["resourceType", "resourceId"])
-    .index("by_timestamp", ["timestamp"])
-    .index("by_team", ["teamId"]),
-});
+    .index('by_user', ['userId'])
+    .index('by_resource', ['resourceType', 'resourceId'])
+    .index('by_timestamp', ['timestamp'])
+    .index('by_team', ['teamId']),
+})

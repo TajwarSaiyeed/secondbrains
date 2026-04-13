@@ -1,4 +1,4 @@
-import type { Id } from "convex/_generated/dataModel";
+import type { Id } from 'convex/_generated/dataModel'
 
 /**
  * Safe type casting for string IDs to Convex Id<T> branded type.
@@ -11,9 +11,9 @@ export function asId<T extends any = any>(
   id: string | undefined,
   // @ts-ignore - Allow generic T to be any string for flexible ID casting
 ): Id<T> | undefined {
-  if (!id) return undefined;
+  if (!id) return undefined
   // @ts-ignore - Allow generic T to be any string for flexible ID casting
-  return id as unknown as Id<T>;
+  return id as unknown as Id<T>
 }
 
 /**
@@ -24,5 +24,5 @@ export function asId<T extends any = any>(
  */
 export function forceAsId<T extends any = any>(id: string): any {
   // @ts-ignore - Allow generic T to be any string for flexible ID casting
-  return id as unknown as Id<T>;
+  return id as unknown as Id<T>
 }

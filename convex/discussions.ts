@@ -1,36 +1,36 @@
-import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { v } from 'convex/values'
+import { mutation, query } from './_generated/server'
 
 export const sendMessage = mutation({
   args: {
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     content: v.string(),
     authorName: v.string(),
-    replyToId: v.optional(v.id("messages")),
+    replyToId: v.optional(v.id('messages')),
     audioUrl: v.optional(v.string()),
-    audioStorageId: v.optional(v.id("_storage")),
+    audioStorageId: v.optional(v.id('_storage')),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userId = identity?.subject;
-    if (!userId) throw new Error("Unauthorized");
+    const identity = await ctx.auth.getUserIdentity()
+    const userId = identity?.subject
+    if (!userId) throw new Error('Unauthorized')
 
     // Verify membership
     const membership = await ctx.db
-      .query("boardMembers")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .filter((q) => q.eq(q.field("userId"), userId))
-      .first();
+      .query('boardMembers')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+      .filter((q) => q.eq(q.field('userId'), userId))
+      .first()
 
-    if (!membership) throw new Error("You are not a member of this board");
+    if (!membership) throw new Error('You are not a member of this board')
 
-    let finalAudioUrl = args.audioUrl;
+    let finalAudioUrl = args.audioUrl
     if (args.audioStorageId) {
-      const url = await ctx.storage.getUrl(args.audioStorageId);
-      if (url) finalAudioUrl = url;
+      const url = await ctx.storage.getUrl(args.audioStorageId)
+      if (url) finalAudioUrl = url
     }
 
-    const messageId = await ctx.db.insert("messages", {
+    const messageId = await ctx.db.insert('messages', {
       boardId: args.boardId,
       content: args.content,
       authorId: userId,
@@ -39,42 +39,42 @@ export const sendMessage = mutation({
       replyToId: args.replyToId,
       audioUrl: finalAudioUrl,
       audioStorageId: args.audioStorageId,
-    });
+    })
 
-    return messageId;
+    return messageId
   },
-});
+})
 
 export const getMessages = query({
   args: {
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     searchQuery: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let messages = [];
+    let messages = []
 
     if (args.searchQuery) {
       messages = await ctx.db
-        .query("messages")
-        .withSearchIndex("search_content", (q) => 
-          q.search("content", args.searchQuery!).eq("boardId", args.boardId)
+        .query('messages')
+        .withSearchIndex('search_content', (q) =>
+          q.search('content', args.searchQuery!).eq('boardId', args.boardId),
         )
-        .collect();
+        .collect()
       // Need to manual sort the search results
-      messages.sort((a, b) => a.createdAt - b.createdAt);
+      messages.sort((a, b) => a.createdAt - b.createdAt)
     } else {
       messages = await ctx.db
-        .query("messages")
-        .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-        .order("asc")
-        .collect();
+        .query('messages')
+        .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+        .order('asc')
+        .collect()
     }
 
     return Promise.all(
       messages.map(async (msg) => {
-        let parentMessage = null;
+        let parentMessage = null
         if (msg.replyToId) {
-          parentMessage = await ctx.db.get(msg.replyToId);
+          parentMessage = await ctx.db.get(msg.replyToId)
         }
         return {
           ...msg,
@@ -84,137 +84,137 @@ export const getMessages = query({
                 authorName: parentMessage.authorName,
               }
             : undefined,
-        };
+        }
       }),
-    );
+    )
   },
-});
+})
 
 export const markAsAnswer = mutation({
   args: {
-    messageId: v.id("messages"),
-    boardId: v.id("boards"),
+    messageId: v.id('messages'),
+    boardId: v.id('boards'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userId = identity?.subject;
-    if (!userId) throw new Error("Unauthorized");
+    const identity = await ctx.auth.getUserIdentity()
+    const userId = identity?.subject
+    if (!userId) throw new Error('Unauthorized')
 
-    const board = await ctx.db.get(args.boardId);
-    if (!board) throw new Error("Board not found");
+    const board = await ctx.db.get(args.boardId)
+    if (!board) throw new Error('Board not found')
 
     // Only owner can mark as answer
     if (board.ownerId !== userId) {
-      throw new Error("Only the board owner can mark messages as answers");
+      throw new Error('Only the board owner can mark messages as answers')
     }
 
-    const message = await ctx.db.get(args.messageId);
-    if (!message) throw new Error("Message not found");
+    const message = await ctx.db.get(args.messageId)
+    if (!message) throw new Error('Message not found')
 
     const existingAnswer = await ctx.db
-      .query("answers")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .first();
+      .query('answers')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+      .first()
 
     if (existingAnswer) {
       // Replace existing answer
-      await ctx.db.patch(existingAnswer._id, { messageId: args.messageId });
+      await ctx.db.patch(existingAnswer._id, { messageId: args.messageId })
     } else {
       // Create new answer record
-      await ctx.db.insert("answers", {
+      await ctx.db.insert('answers', {
         boardId: args.boardId,
         messageId: args.messageId,
         markedById: userId,
         markedAt: Date.now(),
-      });
+      })
     }
 
-    return true;
+    return true
   },
-});
+})
 
 export const unmarkAsAnswer = mutation({
   args: {
-    messageId: v.id("messages"),
-    boardId: v.id("boards"),
+    messageId: v.id('messages'),
+    boardId: v.id('boards'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userId = identity?.subject;
-    if (!userId) throw new Error("Unauthorized");
+    const identity = await ctx.auth.getUserIdentity()
+    const userId = identity?.subject
+    if (!userId) throw new Error('Unauthorized')
 
-    const board = await ctx.db.get(args.boardId);
-    if (!board) throw new Error("Board not found");
+    const board = await ctx.db.get(args.boardId)
+    if (!board) throw new Error('Board not found')
 
     if (board.ownerId !== userId) {
-      throw new Error("Only the board owner can unmark messages as answers");
+      throw new Error('Only the board owner can unmark messages as answers')
     }
 
     const existingAnswer = await ctx.db
-      .query("answers")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .first();
+      .query('answers')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+      .first()
 
     if (existingAnswer && existingAnswer.messageId === args.messageId) {
-      await ctx.db.delete(existingAnswer._id);
+      await ctx.db.delete(existingAnswer._id)
     }
 
-    return true;
+    return true
   },
-});
+})
 
 export const deleteMessage = mutation({
   args: {
-    messageId: v.id("messages"),
+    messageId: v.id('messages'),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    const userId = identity?.subject;
-    if (!userId) throw new Error("Unauthorized");
+    const identity = await ctx.auth.getUserIdentity()
+    const userId = identity?.subject
+    if (!userId) throw new Error('Unauthorized')
 
-    const message = await ctx.db.get(args.messageId);
-    if (!message) throw new Error("Message not found");
+    const message = await ctx.db.get(args.messageId)
+    if (!message) throw new Error('Message not found')
 
-    let canDelete = message.authorId === userId;
+    let canDelete = message.authorId === userId
 
     if (!canDelete) {
-      const board = await ctx.db.get(message.boardId);
+      const board = await ctx.db.get(message.boardId)
       if (board && board.ownerId === userId) {
-        canDelete = true;
+        canDelete = true
       }
     }
 
     if (!canDelete) {
-      throw new Error("Unauthorized to delete this message");
+      throw new Error('Unauthorized to delete this message')
     }
 
-    await ctx.db.delete(args.messageId);
-    return true;
+    await ctx.db.delete(args.messageId)
+    return true
   },
-});
+})
 
 export const searchMessages = query({
   args: {
-    boardId: v.id("boards"),
+    boardId: v.id('boards'),
     searchQuery: v.string(),
   },
   handler: async (ctx, args) => {
     if (!args.searchQuery.trim()) {
-      return [];
+      return []
     }
 
     const messages = await ctx.db
-      .query("messages")
-      .withSearchIndex("search_content", (q) =>
-        q.search("content", args.searchQuery).eq("boardId", args.boardId),
+      .query('messages')
+      .withSearchIndex('search_content', (q) =>
+        q.search('content', args.searchQuery).eq('boardId', args.boardId),
       )
-      .take(50);
+      .take(50)
 
     return Promise.all(
       messages.map(async (msg) => {
-        let parentMessage = null;
+        let parentMessage = null
         if (msg.replyToId) {
-          parentMessage = await ctx.db.get(msg.replyToId);
+          parentMessage = await ctx.db.get(msg.replyToId)
         }
         return {
           ...msg,
@@ -224,8 +224,8 @@ export const searchMessages = query({
                 authorName: parentMessage.authorName,
               }
             : undefined,
-        };
+        }
       }),
-    );
+    )
   },
-});
+})

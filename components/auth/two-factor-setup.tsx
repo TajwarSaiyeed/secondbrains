@@ -1,28 +1,28 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import type { Id } from "@/convex/_generated/dataModel";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react'
+import { useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import type { Id } from '@/convex/_generated/dataModel'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Copy, Check, Shield, AlertTriangle } from "lucide-react";
-import { toast } from "sonner";
+} from '@/components/ui/dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Copy, Check, Shield, AlertTriangle } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface TwoFactorSetupProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  onSuccess?: () => void
 }
 
 export function TwoFactorSetup({
@@ -30,83 +30,83 @@ export function TwoFactorSetup({
   onOpenChange,
   onSuccess,
 }: TwoFactorSetupProps) {
-  const [step, setStep] = useState<"intro" | "qr" | "verify" | "backup">(
-    "intro",
-  );
-  const [totpSecret, setTotpSecret] = useState("");
-  const [qrCodeUrl, setQrCodeUrl] = useState("");
-  const [factorId, setFactorId] = useState("");
-  const [verifiyCode, setVerifyCode] = useState("");
-  const [backupCodes, setBackupCodes] = useState<string[]>([]);
-  const [copied, setCopied] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'intro' | 'qr' | 'verify' | 'backup'>(
+    'intro',
+  )
+  const [totpSecret, setTotpSecret] = useState('')
+  const [qrCodeUrl, setQrCodeUrl] = useState('')
+  const [factorId, setFactorId] = useState('')
+  const [verifiyCode, setVerifyCode] = useState('')
+  const [backupCodes, setBackupCodes] = useState<string[]>([])
+  const [copied, setCopied] = useState(false)
+  const [loading, setLoading] = useState(false)
 
-  const generateSecret = useMutation(api.auth2fa.generateTotpSecret);
-  const verifyTwoFA = useMutation(api.auth2fa.verifyAndEnable2FA);
+  const generateSecret = useMutation(api.auth2fa.generateTotpSecret)
+  const verifyTwoFA = useMutation(api.auth2fa.verifyAndEnable2FA)
 
   const handleGenerateSecret = async () => {
     try {
-      setLoading(true);
-      const result = await generateSecret();
+      setLoading(true)
+      const result = await generateSecret()
 
-      setTotpSecret(result.secret);
-      setQrCodeUrl(result.qrCodeUrl);
-      setFactorId(result.factorId);
-      setStep("qr");
+      setTotpSecret(result.secret)
+      setQrCodeUrl(result.qrCodeUrl)
+      setFactorId(result.factorId)
+      setStep('qr')
     } catch (err) {
-      toast.error("Failed to generate secret");
+      toast.error('Failed to generate secret')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleVerifyCode = async () => {
     if (verifiyCode.length !== 6) {
-      toast.error("Please enter a 6-digit code");
-      return;
+      toast.error('Please enter a 6-digit code')
+      return
     }
 
     try {
-      setLoading(true);
+      setLoading(true)
       const result = await verifyTwoFA({
         factorId: factorId as any,
         code: verifiyCode,
-      });
+      })
 
       if (result.success) {
-        setBackupCodes(result.backupCodes);
-        setStep("backup");
-        toast.success("2FA enabled successfully!");
+        setBackupCodes(result.backupCodes)
+        setStep('backup')
+        toast.success('2FA enabled successfully!')
       }
     } catch (err) {
-      toast.error("Invalid code. Please try again.");
-      setVerifyCode("");
+      toast.error('Invalid code. Please try again.')
+      setVerifyCode('')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleCopyBackupCode = async (code: string) => {
-    await navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-    toast.success("Copied to clipboard");
-  };
+    await navigator.clipboard.writeText(code)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+    toast.success('Copied to clipboard')
+  }
 
   const handleCompleteSetup = () => {
-    onOpenChange(false);
-    setStep("intro");
-    setTotpSecret("");
-    setQrCodeUrl("");
-    setVerifyCode("");
-    setBackupCodes([]);
-    onSuccess?.();
-  };
+    onOpenChange(false)
+    setStep('intro')
+    setTotpSecret('')
+    setQrCodeUrl('')
+    setVerifyCode('')
+    setBackupCodes([])
+    onSuccess?.()
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-150">
-        {step === "intro" && (
+        {step === 'intro' && (
           <>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -137,7 +137,7 @@ export function TwoFactorSetup({
                     <li className="flex items-center gap-2">
                       <span className="font-semibold">1.</span>
                       <span>
-                        An authenticator app:{" "}
+                        An authenticator app:{' '}
                         <span className="font-mono text-xs">
                           Google Authenticator, Authy, Microsoft Authenticator,
                           etc.
@@ -156,7 +156,7 @@ export function TwoFactorSetup({
                 </CardContent>
               </Card>
 
-              <div className="flex gap-2 justify-end">
+              <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => onOpenChange(false)}>
                   Cancel
                 </Button>
@@ -165,14 +165,14 @@ export function TwoFactorSetup({
                   disabled={loading}
                   className="bg-cyan-600 hover:bg-cyan-700"
                 >
-                  {loading ? "Generating..." : "Continue"}
+                  {loading ? 'Generating...' : 'Continue'}
                 </Button>
               </div>
             </div>
           </>
         )}
 
-        {step === "qr" && (
+        {step === 'qr' && (
           <>
             <DialogHeader>
               <DialogTitle>Scan QR Code</DialogTitle>
@@ -184,9 +184,9 @@ export function TwoFactorSetup({
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-4">
                 {/* In production, generate QR code using 'qrcode' npm package */}
-                <div className="border-2 border-dashed border-gray-300 p-4 rounded">
+                <div className="rounded border-2 border-dashed border-gray-300 p-4">
                   {/* <QRCode value={qrCodeUrl} size={256} /> */}
-                  <div className="w-64 h-64 bg-gray-100 flex items-center justify-center text-sm text-gray-500">
+                  <div className="flex h-64 w-64 items-center justify-center bg-gray-100 text-sm text-gray-500">
                     QR Code will render here
                     <br />
                     Use qrcode npm package
@@ -194,20 +194,20 @@ export function TwoFactorSetup({
                 </div>
 
                 <div className="text-center">
-                  <p className="text-sm text-gray-600 mb-2">
+                  <p className="mb-2 text-sm text-gray-600">
                     Can't scan? Enter this key manually:
                   </p>
-                  <div className="flex items-center gap-2 justify-center">
-                    <code className="bg-gray-100 px-4 py-2 rounded font-mono text-sm">
+                  <div className="flex items-center justify-center gap-2">
+                    <code className="rounded bg-gray-100 px-4 py-2 font-mono text-sm">
                       {totpSecret}
                     </code>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        navigator.clipboard.writeText(totpSecret);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
+                        navigator.clipboard.writeText(totpSecret)
+                        setCopied(true)
+                        setTimeout(() => setCopied(false), 2000)
                       }}
                     >
                       {copied ? (
@@ -220,12 +220,12 @@ export function TwoFactorSetup({
                 </div>
               </div>
 
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setStep("intro")}>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setStep('intro')}>
                   Back
                 </Button>
                 <Button
-                  onClick={() => setStep("verify")}
+                  onClick={() => setStep('verify')}
                   className="bg-cyan-600 hover:bg-cyan-700"
                 >
                   I've Scanned the Code
@@ -235,7 +235,7 @@ export function TwoFactorSetup({
           </>
         )}
 
-        {step === "verify" && (
+        {step === 'verify' && (
           <>
             <DialogHeader>
               <DialogTitle>Verify Code</DialogTitle>
@@ -245,7 +245,7 @@ export function TwoFactorSetup({
             </DialogHeader>
 
             <div className="space-y-4">
-              <div className="flex gap-2 justify-center">
+              <div className="flex justify-center gap-2">
                 <Input
                   type="text"
                   inputMode="numeric"
@@ -253,9 +253,9 @@ export function TwoFactorSetup({
                   placeholder="000000"
                   value={verifiyCode}
                   onChange={(e) =>
-                    setVerifyCode(e.target.value.replace(/\D/g, ""))
+                    setVerifyCode(e.target.value.replace(/\D/g, ''))
                   }
-                  className="w-32 text-center text-2xl tracking-widest font-mono"
+                  className="w-32 text-center font-mono text-2xl tracking-widest"
                   disabled={loading}
                 />
               </div>
@@ -267,8 +267,8 @@ export function TwoFactorSetup({
                 </AlertDescription>
               </Alert>
 
-              <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setStep("qr")}>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setStep('qr')}>
                   Back
                 </Button>
                 <Button
@@ -276,14 +276,14 @@ export function TwoFactorSetup({
                   disabled={verifiyCode.length !== 6 || loading}
                   className="bg-cyan-600 hover:bg-cyan-700"
                 >
-                  {loading ? "Verifying..." : "Verify"}
+                  {loading ? 'Verifying...' : 'Verify'}
                 </Button>
               </div>
             </div>
           </>
         )}
 
-        {step === "backup" && (
+        {step === 'backup' && (
           <>
             <DialogHeader>
               <DialogTitle>Save Backup Codes</DialogTitle>
@@ -306,7 +306,7 @@ export function TwoFactorSetup({
                 {backupCodes.map((code, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center gap-2 p-3 bg-gray-50 rounded border border-gray-200"
+                    className="flex items-center gap-2 rounded border border-gray-200 bg-gray-50 p-3"
                   >
                     <code className="flex-1 font-mono text-sm">{code}</code>
                     <Button
@@ -324,9 +324,9 @@ export function TwoFactorSetup({
                 <Button
                   variant="outline"
                   onClick={() => {
-                    const text = backupCodes.join("\n");
-                    navigator.clipboard.writeText(text);
-                    toast.success("All codes copied!");
+                    const text = backupCodes.join('\n')
+                    navigator.clipboard.writeText(text)
+                    toast.success('All codes copied!')
                   }}
                   className="flex-1"
                 >
@@ -334,14 +334,14 @@ export function TwoFactorSetup({
                 </Button>
               </div>
 
-              <div className="flex items-center gap-2 p-3 bg-green-50 rounded border border-green-200">
+              <div className="flex items-center gap-2 rounded border border-green-200 bg-green-50 p-3">
                 <input type="checkbox" id="saved" className="rounded" />
                 <label htmlFor="saved" className="text-sm text-green-800">
                   I've saved my backup codes in a safe place
                 </label>
               </div>
 
-              <div className="flex gap-2 justify-end">
+              <div className="flex justify-end gap-2">
                 <Button
                   onClick={handleCompleteSetup}
                   className="bg-green-600 hover:bg-green-700"
@@ -354,5 +354,5 @@ export function TwoFactorSetup({
         )}
       </DialogContent>
     </Dialog>
-  );
+  )
 }

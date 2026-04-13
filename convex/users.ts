@@ -1,5 +1,5 @@
-import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { mutation, query } from './_generated/server'
+import { v } from 'convex/values'
 
 /**
  * Get the currently authenticated user
@@ -8,17 +8,17 @@ import { v } from "convex/values";
 export const current = query({
   args: {},
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return null;
+    const identity = await ctx.auth.getUserIdentity()
+    if (!identity) return null
 
     const user = await ctx.db
-      .query("user")
-      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
-      .first();
+      .query('user')
+      .withIndex('by_userId', (q) => q.eq('userId', identity.subject))
+      .first()
 
-    return user || null;
+    return user || null
   },
-});
+})
 
 /**
  * Get user by ID - for public/admin queries, NOT for current user
@@ -29,13 +29,13 @@ export const getById = query({
   },
   handler: async (ctx, args) => {
     const user = await ctx.db
-      .query("user")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .first();
+      .query('user')
+      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
+      .first()
 
-    return user || null;
+    return user || null
   },
-});
+})
 
 /**
  * Securely update authenticated user's profile
@@ -49,34 +49,34 @@ export const updateProfile = mutation({
     telegram: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated')
     }
 
     const user = await ctx.db
-      .query("user")
-      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
-      .first();
+      .query('user')
+      .withIndex('by_userId', (q) => q.eq('userId', identity.subject))
+      .first()
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found')
     }
 
-    const updates: Record<string, any> = {};
-    if (args.name !== undefined) updates.name = args.name;
-    if (args.phone !== undefined) updates.phone = args.phone;
-    if (args.whatsapp !== undefined) updates.whatsapp = args.whatsapp;
-    if (args.telegram !== undefined) updates.telegram = args.telegram;
-    updates.updatedAt = Date.now();
+    const updates: Record<string, any> = {}
+    if (args.name !== undefined) updates.name = args.name
+    if (args.phone !== undefined) updates.phone = args.phone
+    if (args.whatsapp !== undefined) updates.whatsapp = args.whatsapp
+    if (args.telegram !== undefined) updates.telegram = args.telegram
+    updates.updatedAt = Date.now()
 
     if (Object.keys(updates).length > 0) {
-      await ctx.db.patch(user._id, updates);
+      await ctx.db.patch(user._id, updates)
     }
 
-    return user._id;
+    return user._id
   },
-});
+})
 
 /**
  * Securely update authenticated user's settings
@@ -88,33 +88,33 @@ export const updateSettings = mutation({
     aiSuggestions: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await ctx.auth.getUserIdentity()
     if (!identity) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated')
     }
 
     const settings = await ctx.db
-      .query("userSettings")
-      .withIndex("by_user", (q) => q.eq("userId", identity.subject))
-      .first();
+      .query('userSettings')
+      .withIndex('by_user', (q) => q.eq('userId', identity.subject))
+      .first()
 
     if (settings) {
       await ctx.db.patch(settings._id, {
         emailNotifications:
           args.emailNotifications ?? settings.emailNotifications,
         aiSuggestions: args.aiSuggestions ?? settings.aiSuggestions,
-      });
+      })
     } else {
-      await ctx.db.insert("userSettings", {
+      await ctx.db.insert('userSettings', {
         userId: identity.subject,
         emailNotifications: args.emailNotifications ?? true,
         aiSuggestions: args.aiSuggestions ?? true,
-      });
+      })
     }
 
-    return true;
+    return true
   },
-});
+})
 
 /**
  * Get all users (admin/internal use)
@@ -122,9 +122,9 @@ export const updateSettings = mutation({
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
-    return await ctx.db.query("user").collect();
+    return await ctx.db.query('user').collect()
   },
-});
+})
 
 /**
  * Get total user count
@@ -132,10 +132,10 @@ export const listAll = query({
 export const count = query({
   args: {},
   handler: async (ctx) => {
-    const users = await ctx.db.query("user").collect();
-    return users.length;
+    const users = await ctx.db.query('user').collect()
+    return users.length
   },
-});
+})
 
 /**
  * Admin mutation to set user role
@@ -147,33 +147,33 @@ export const setRole = mutation({
     role: v.string(),
   },
   handler: async (ctx, args) => {
-    const caller = await ctx.auth.getUserIdentity();
+    const caller = await ctx.auth.getUserIdentity()
     if (!caller) {
-      throw new Error("Not authenticated");
+      throw new Error('Not authenticated')
     }
 
     const callerUser = await ctx.db
-      .query("user")
-      .withIndex("by_userId", (q) => q.eq("userId", caller.subject))
-      .first();
+      .query('user')
+      .withIndex('by_userId', (q) => q.eq('userId', caller.subject))
+      .first()
 
     if (
       !callerUser ||
-      (callerUser.role !== "admin" && callerUser.role !== "super_admin")
+      (callerUser.role !== 'admin' && callerUser.role !== 'super_admin')
     ) {
-      throw new Error("Unauthorized: Only admins can assign roles");
+      throw new Error('Unauthorized: Only admins can assign roles')
     }
 
     const user = await ctx.db
-      .query("user")
-      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
-      .first();
+      .query('user')
+      .withIndex('by_userId', (q) => q.eq('userId', args.userId))
+      .first()
 
     if (!user) {
-      throw new Error("User not found");
+      throw new Error('User not found')
     }
 
-    await ctx.db.patch(user._id, { role: args.role });
-    return user._id;
+    await ctx.db.patch(user._id, { role: args.role })
+    return user._id
   },
-});
+})

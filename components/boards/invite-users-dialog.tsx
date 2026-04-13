@@ -1,11 +1,11 @@
-"use client";
+'use client'
 
-import type React from "react";
+import type React from 'react'
 
-import { useState } from "react";
-import { useMutation, useAction } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react'
+import { useMutation, useAction } from 'convex/react'
+import { api } from '@/convex/_generated/api'
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -13,36 +13,36 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { UserPlus, X, Mail, Copy, Check } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "sonner";
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { UserPlus, X, Mail, Copy, Check } from 'lucide-react'
+import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
 export function InviteUsersDialog({
   boardId,
   boardTitle,
   userName,
 }: {
-  boardId: string;
-  boardTitle?: string;
-  userName?: string;
+  boardId: string
+  boardTitle?: string
+  userName?: string
 }) {
-  const [open, setOpen] = useState(false);
-  const [emails, setEmails] = useState<string[]>([]);
-  const [currentEmail, setCurrentEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [inviteLink, setInviteLink] = useState("");
-  const [linkCopied, setLinkCopied] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [error, setError] = useState("");
+  const [open, setOpen] = useState(false)
+  const [emails, setEmails] = useState<string[]>([])
+  const [currentEmail, setCurrentEmail] = useState('')
+  const [message, setMessage] = useState('')
+  const [inviteLink, setInviteLink] = useState('')
+  const [linkCopied, setLinkCopied] = useState(false)
+  const [isSending, setIsSending] = useState(false)
+  const [error, setError] = useState('')
 
   // Convex mutations and actions
-  const createEmailInvite = useMutation(api.invites.createEmailInvite);
-  const triggerInviteEmail = useAction(api.inngestTrigger.triggerInviteEmail);
-  const generateInviteToken = useMutation(api.invites.generateInviteToken);
+  const createEmailInvite = useMutation(api.invites.createEmailInvite)
+  const triggerInviteEmail = useAction(api.inngestTrigger.triggerInviteEmail)
+  const generateInviteToken = useMutation(api.invites.generateInviteToken)
 
   const addEmail = () => {
     if (
@@ -50,45 +50,45 @@ export function InviteUsersDialog({
       isValidEmail(currentEmail) &&
       !emails.includes(currentEmail)
     ) {
-      setEmails([...emails, currentEmail]);
-      setCurrentEmail("");
+      setEmails([...emails, currentEmail])
+      setCurrentEmail('')
     }
-  };
+  }
 
   const removeEmail = (emailToRemove: string) => {
-    setEmails(emails.filter((email) => email !== emailToRemove));
-  };
+    setEmails(emails.filter((email) => email !== emailToRemove))
+  }
 
   const isValidEmail = (email: string) => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  };
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      addEmail();
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addEmail()
     }
-  };
+  }
 
   const generateInviteLink = async () => {
     try {
-      const result = await generateInviteToken({ boardId: boardId as any });
-      if (result && "link" in result) {
-        setInviteLink(result.link);
-        toast.success("Invite link generated");
+      const result = await generateInviteToken({ boardId: boardId as any })
+      if (result && 'link' in result) {
+        setInviteLink(result.link)
+        toast.success('Invite link generated')
       }
     } catch (err) {
       const message =
-        err instanceof Error ? err.message : "Failed to generate link";
-      setError(message);
-      toast.error(message);
+        err instanceof Error ? err.message : 'Failed to generate link'
+      setError(message)
+      toast.error(message)
     }
-  };
+  }
 
   const handleSend = async () => {
-    if (emails.length === 0) return;
-    setIsSending(true);
-    setError("");
+    if (emails.length === 0) return
+    setIsSending(true)
+    setError('')
 
     try {
       // Send email invites for each email address
@@ -97,44 +97,44 @@ export function InviteUsersDialog({
         const inviteResult = await createEmailInvite({
           boardId: boardId as any,
           email,
-        });
+        })
 
-        if (inviteResult && "inviteId" in inviteResult) {
+        if (inviteResult && 'inviteId' in inviteResult) {
           // Trigger the email sending via Inngest
           await triggerInviteEmail({
             boardId: boardId as any,
             email,
-            boardTitle: boardTitle || "a shared board",
-            inviterName: userName || "SecondBrains User",
-            message: message || "",
-          });
+            boardTitle: boardTitle || 'a shared board',
+            inviterName: userName || 'SecondBrains User',
+            message: message || '',
+          })
         }
       }
 
       // Clear form and close dialog
-      setEmails([]);
-      setMessage("");
+      setEmails([])
+      setMessage('')
       toast.success(
-        `Invitations sent to ${emails.length} ${emails.length === 1 ? "person" : "people"}`,
-      );
-      setOpen(false);
+        `Invitations sent to ${emails.length} ${emails.length === 1 ? 'person' : 'people'}`,
+      )
+      setOpen(false)
     } catch (err) {
       const errorMessage =
-        err instanceof Error ? err.message : "Failed to send invitations";
-      setError(errorMessage);
-      toast.error(errorMessage);
+        err instanceof Error ? err.message : 'Failed to send invitations'
+      setError(errorMessage)
+      toast.error(errorMessage)
     }
 
-    setIsSending(false);
-  };
+    setIsSending(false)
+  }
 
   const copyInviteLink = async () => {
     if (inviteLink) {
-      await navigator.clipboard.writeText(inviteLink);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
+      await navigator.clipboard.writeText(inviteLink)
+      setLinkCopied(true)
+      setTimeout(() => setLinkCopied(false), 2000)
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -151,8 +151,8 @@ export function InviteUsersDialog({
         <DialogHeader>
           <DialogTitle>Invite Users to Board</DialogTitle>
           <DialogDescription>
-            Invite collaborators to join{" "}
-            {boardTitle ? `"${boardTitle}"` : "this board"} and start working
+            Invite collaborators to join{' '}
+            {boardTitle ? `"${boardTitle}"` : 'this board'} and start working
             together.
           </DialogDescription>
         </DialogHeader>
@@ -187,7 +187,7 @@ export function InviteUsersDialog({
           {emails.length > 0 && (
             <div className="space-y-2">
               <Label>Invited Users ({emails.length})</Label>
-              <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+              <div className="flex max-h-24 flex-wrap gap-2 overflow-y-auto">
                 {emails.map((email) => (
                   <Badge key={email} variant="secondary" className="gap-1">
                     <Mail className="h-3 w-3" />
@@ -217,7 +217,7 @@ export function InviteUsersDialog({
             />
           </div>
 
-          <div className="space-y-2 pt-4 border-t">
+          <div className="space-y-2 border-t pt-4">
             <Label>Or Share Invite Link</Label>
             {!inviteLink ? (
               <Button
@@ -259,11 +259,11 @@ export function InviteUsersDialog({
               className="flex-1 bg-cyan-600 hover:bg-cyan-700"
               disabled={emails.length === 0 || isSending}
             >
-              {isSending ? "Sending..." : `Send Invitations (${emails.length})`}
+              {isSending ? 'Sending...' : `Send Invitations (${emails.length})`}
             </Button>
           </div>
         </div>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

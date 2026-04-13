@@ -1,13 +1,13 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff } from "lucide-react";
-import Link from "next/link";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Eye, EyeOff } from 'lucide-react'
+import Link from 'next/link'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   Form,
   FormControl,
@@ -16,58 +16,58 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { LoginFormValues, loginSchema } from "@/schema/auth-schema";
-import { authClient } from "@/lib/auth-client";
-import { toast } from "sonner";
-import { useRouter } from "next/navigation";
+} from '@/components/ui/form'
+import { LoginFormValues, loginSchema } from '@/schema/auth-schema'
+import { authClient } from '@/lib/auth-client'
+import { toast } from 'sonner'
+import { useRouter } from 'next/navigation'
 
 interface LoginFormProps {
-  inviteToken?: string;
-  callbackUrl?: string;
+  inviteToken?: string
+  callbackUrl?: string
 }
 
 export function LoginForm({
   inviteToken,
-  callbackUrl = "/dashboard",
+  callbackUrl = '/dashboard',
 }: LoginFormProps) {
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false)
+  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
-      password: "",
+      email: '',
+      password: '',
     },
-  });
+  })
 
   async function handleLogin(values: LoginFormValues) {
-    setIsLoading(true);
-    setError("");
+    setIsLoading(true)
+    setError('')
 
     const finalCallbackUrl = inviteToken
       ? `/invite/${inviteToken}`
-      : callbackUrl;
+      : callbackUrl
 
     try {
       const result = await authClient.signIn.email({
         email: values.email,
         password: values.password,
-      });
+      })
 
       if (result) {
-        toast.success("Signed in successfully");
-        router.push(finalCallbackUrl);
+        toast.success('Signed in successfully')
+        router.push(finalCallbackUrl)
       }
     } catch (err) {
-      setIsLoading(false);
+      setIsLoading(false)
       const message =
-        err instanceof Error ? err.message : "Invalid email or password";
-      setError(message);
-      toast.error(message);
+        err instanceof Error ? err.message : 'Invalid email or password'
+      setError(message)
+      toast.error(message)
     }
   }
 
@@ -107,7 +107,7 @@ export function LoginForm({
                   <div className="relative">
                     <Input
                       {...field}
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Enter your password"
                       disabled={isLoading}
                     />
@@ -116,7 +116,7 @@ export function LoginForm({
                       type="button"
                       variant="ghost"
                       size="icon"
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                      className="absolute top-1/2 right-2 h-8 w-8 -translate-y-1/2"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -151,10 +151,10 @@ export function LoginForm({
           )}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? "Signing in..." : "Sign in"}
+            {isLoading ? 'Signing in...' : 'Sign in'}
           </Button>
         </form>
       </Form>
     </>
-  );
+  )
 }

@@ -1,9 +1,9 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
@@ -12,39 +12,39 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Sparkles, Calendar, MessageSquare, Loader2 } from "lucide-react";
+} from '@/components/ui/dialog'
+import { Sparkles, Calendar, MessageSquare, Loader2 } from 'lucide-react'
 
 interface SummarizeDialogProps {
-  boardId: string;
+  boardId: string
 }
 
 export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
-  const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [summaryType, setSummaryType] = useState<"days" | "dateRange">("days");
-  const [days, setDays] = useState(2);
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [open, setOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [summaryType, setSummaryType] = useState<'days' | 'dateRange'>('days')
+  const [days, setDays] = useState(2)
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
 
   const handleSubmit = async () => {
-    if (!boardId) return;
+    if (!boardId) return
 
-    setLoading(true);
+    setLoading(true)
 
     try {
-      console.log("Summary feature not yet implemented");
-      setOpen(false);
-      setDays(2);
-      setStartDate("");
-      setEndDate("");
-      setSummaryType("days");
+      console.log('Summary feature not yet implemented')
+      setOpen(false)
+      setDays(2)
+      setStartDate('')
+      setEndDate('')
+      setSummaryType('days')
     } catch (error) {
-      console.error("Error summarizing discussion:", error);
+      console.error('Error summarizing discussion:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -54,7 +54,7 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
           size="sm"
           className="dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
         >
-          <Sparkles className="h-4 w-4 mr-2" />
+          <Sparkles className="mr-2 h-4 w-4" />
           Summarize Discussion
         </Button>
       </DialogTrigger>
@@ -74,27 +74,27 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
             <Label>Summary timeframe</Label>
             <div className="flex gap-2">
               <Button
-                variant={summaryType === "days" ? "default" : "outline"}
+                variant={summaryType === 'days' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setSummaryType("days")}
+                onClick={() => setSummaryType('days')}
                 className="gap-1 dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
               >
-                <Calendar className="h-4 w-4 mr-1" />
+                <Calendar className="mr-1 h-4 w-4" />
                 Last X Days
               </Button>
               <Button
-                variant={summaryType === "dateRange" ? "default" : "outline"}
+                variant={summaryType === 'dateRange' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setSummaryType("dateRange")}
+                onClick={() => setSummaryType('dateRange')}
                 className="gap-1 dark:border-gray-700 dark:text-white dark:hover:text-gray-700"
               >
-                <MessageSquare className="h-4 w-4 mr-1" />
+                <MessageSquare className="mr-1 h-4 w-4" />
                 Date Range
               </Button>
             </div>
           </div>
 
-          {summaryType === "days" && (
+          {summaryType === 'days' && (
             <div className="space-y-2">
               <Label htmlFor="days">Number of days</Label>
               <Input
@@ -106,14 +106,14 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
                 onChange={(e) => setDays(parseInt(e.target.value) || 1)}
                 placeholder="e.g., 7"
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Summarize messages from the last {days} day
-                {days !== 1 ? "s" : ""}
+                {days !== 1 ? 's' : ''}
               </p>
             </div>
           )}
 
-          {summaryType === "dateRange" && (
+          {summaryType === 'dateRange' && (
             <div className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="startDate">Start date (optional)</Label>
@@ -133,7 +133,7 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
                   onChange={(e) => setEndDate(e.target.value)}
                 />
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Leave dates empty to include all messages
               </p>
             </div>
@@ -145,19 +145,19 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
             variant="outline"
             onClick={() => setOpen(false)}
             disabled={loading}
-            className="cursor-pointer dark:text-white dark:hover:text-rose-500 dark:hover:bg-transparent dark:hover:border-rose-500"
+            className="cursor-pointer dark:text-white dark:hover:border-rose-500 dark:hover:bg-transparent dark:hover:text-rose-500"
           >
             Cancel
           </Button>
           <Button onClick={handleSubmit} disabled={loading}>
             {loading ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Generating...
               </>
             ) : (
               <>
-                <Sparkles className="h-4 w-4 mr-2" />
+                <Sparkles className="mr-2 h-4 w-4" />
                 Generate Summary
               </>
             )}
@@ -165,5 +165,5 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  );
+  )
 }

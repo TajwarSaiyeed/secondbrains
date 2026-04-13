@@ -1,32 +1,32 @@
-import { Suspense } from "react";
-import { redirect } from "next/navigation";
-import { isAuthenticated } from "@/lib/auth-server";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { getUser } from "@/actions/profile";
-import { ProfileEditForm } from "../../components/profile/profile-edit-form";
-import { ArrowLeft, User } from "lucide-react";
+import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { isAuthenticated } from '@/lib/auth-server'
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
+import { getUser } from '@/actions/profile'
+import { ProfileEditForm } from '../../components/profile/profile-edit-form'
+import { ArrowLeft, User } from 'lucide-react'
 
 async function ProfileContent() {
-  const authenticated = await isAuthenticated();
+  const authenticated = await isAuthenticated()
   if (!authenticated) {
-    redirect("/login?from=/profile");
+    redirect('/login?from=/profile')
   }
 
-  const user = await getUser();
-  if (!user) redirect("/login");
+  const user = await getUser()
+  if (!user) redirect('/login')
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <User className="h-6 w-6 text-primary" />
+            <User className="text-primary h-6 w-6" />
             <h1 className="text-2xl font-bold">Profile</h1>
           </div>
           <Button variant="ghost" size="sm" asChild>
             <Link href="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back to Dashboard
+              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
             </Link>
           </Button>
         </div>
@@ -42,7 +42,7 @@ async function ProfileContent() {
         />
       </div>
     </div>
-  );
+  )
 }
 
 export default function ProfilePage() {
@@ -50,5 +50,5 @@ export default function ProfilePage() {
     <Suspense fallback={<div>Loading...</div>}>
       <ProfileContent />
     </Suspense>
-  );
+  )
 }

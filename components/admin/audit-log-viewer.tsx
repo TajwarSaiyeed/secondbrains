@@ -1,8 +1,8 @@
-"use client";
+'use client'
 
-import { useState } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
+import { useState } from 'react'
+import { useQuery, useMutation } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import {
   Table,
   TableBody,
@@ -10,17 +10,17 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+} from '@/components/ui/table'
+import { Button } from '@/components/ui/button'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   LineChart,
   Line,
@@ -32,7 +32,7 @@ import {
   BarChart,
   Bar,
   Legend,
-} from "recharts";
+} from 'recharts'
 import {
   Download,
   ChevronLeft,
@@ -40,87 +40,87 @@ import {
   Search,
   CheckCircle,
   XCircle,
-} from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
+} from 'lucide-react'
+import { formatDistanceToNow } from 'date-fns'
+import { toast } from 'sonner'
 
 interface AuditLogViewerProps {
-  teamId: string;
+  teamId: string
 }
 
 export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(20);
-  const [action, setAction] = useState<string>("");
-  const [status, setStatus] = useState<"success" | "failure" | "">("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [dateRange, setDateRange] = useState<"7d" | "30d" | "90d">("30d");
+  const [page, setPage] = useState(1)
+  const [pageSize] = useState(20)
+  const [action, setAction] = useState<string>('')
+  const [status, setStatus] = useState<'success' | 'failure' | ''>('')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [dateRange, setDateRange] = useState<'7d' | '30d' | '90d'>('30d')
 
   // Get audit stats
-  const daysMap = { "7d": 7, "30d": 30, "90d": 90 };
+  const daysMap = { '7d': 7, '30d': 30, '90d': 90 }
   const stats = useQuery(api.audit.getAuditStats, {
     teamId: teamId as any,
     days: daysMap[dateRange],
-  });
+  })
 
   // Get team audit log
   const logs = useQuery(api.audit.getTeamAuditLog, {
     teamId: teamId as any,
     action: action || undefined,
     limit: 1000, // Fetch more for client-side filtering
-  });
+  })
 
   const exportData = useQuery(api.audit.exportAuditLog, {
     teamId: teamId as any,
-  });
+  })
 
   // Filter logs client-side
   const filteredLogs = logs
     ?.filter((log) => {
-      if (status && log.status !== status) return false;
+      if (status && log.status !== status) return false
       if (
         searchQuery &&
         !log.action.toLowerCase().includes(searchQuery.toLowerCase()) &&
         !log.userId.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
-        return false;
+        return false
       }
-      return true;
+      return true
     })
-    .slice((page - 1) * pageSize, page * pageSize);
+    .slice((page - 1) * pageSize, page * pageSize)
 
   const handleExport = () => {
     if (!exportData) {
-      toast.error("Failed to load export data");
-      return;
+      toast.error('Failed to load export data')
+      return
     }
 
     try {
-      const element = document.createElement("a");
+      const element = document.createElement('a')
       element.setAttribute(
-        "href",
+        'href',
         `data:text/csv;charset=utf-8,${encodeURIComponent(exportData.csv)}`,
-      );
-      element.setAttribute("download", exportData.filename);
-      element.style.display = "none";
-      document.body.appendChild(element);
-      element.click();
-      document.body.removeChild(element);
+      )
+      element.setAttribute('download', exportData.filename)
+      element.style.display = 'none'
+      document.body.appendChild(element)
+      element.click()
+      document.body.removeChild(element)
 
-      toast.success(`Exported ${exportData.totalRecords} records`);
+      toast.success(`Exported ${exportData.totalRecords} records`)
     } catch (err) {
-      toast.error("Failed to export");
+      toast.error('Failed to export')
     }
-  };
+  }
 
   if (!stats || !logs) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-sm font-medium text-gray-600">
@@ -172,8 +172,8 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-lg font-bold truncate">
-              {stats.topActions[0]?.name || "N/A"}
+            <div className="truncate text-lg font-bold">
+              {stats.topActions[0]?.name || 'N/A'}
             </div>
             <p className="text-xs text-gray-500">
               {stats.topActions[0]?.count || 0} times
@@ -183,7 +183,7 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Timeline Chart */}
         <Card>
           <CardHeader>
@@ -243,14 +243,14 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
           </div>
 
           {/* Filters */}
-          <div className="flex gap-4 mt-4">
+          <div className="mt-4 flex gap-4">
             <div className="flex-1">
               <Input
                 placeholder="Search by action, user..."
                 value={searchQuery}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
+                  setSearchQuery(e.target.value)
+                  setPage(1)
                 }}
                 className="h-9"
               />
@@ -260,7 +260,7 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
               value={dateRange}
               onValueChange={(v: any) => setDateRange(v)}
             >
-              <SelectTrigger className="w-40 h-9">
+              <SelectTrigger className="h-9 w-40">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -273,11 +273,11 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
             <Select
               value={status}
               onValueChange={(v) => {
-                setStatus(v as any);
-                setPage(1);
+                setStatus(v as any)
+                setPage(1)
               }}
             >
-              <SelectTrigger className="w-40 h-9">
+              <SelectTrigger className="h-9 w-40">
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
@@ -307,7 +307,7 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
                   <TableBody>
                     {filteredLogs.map((log) => (
                       <TableRow key={log._id} className="border-gray-100">
-                        <TableCell className="text-xs text-gray-500 whitespace-nowrap">
+                        <TableCell className="text-xs whitespace-nowrap text-gray-500">
                           {formatDistanceToNow(new Date(log.timestamp), {
                             addSuffix: true,
                           })}
@@ -315,16 +315,16 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
                         <TableCell className="font-mono text-xs">
                           {log.action}
                         </TableCell>
-                        <TableCell className="text-xs truncate">
+                        <TableCell className="truncate text-xs">
                           {log.userId.substring(0, 20)}...
                         </TableCell>
                         <TableCell className="text-xs">
-                          <span className="bg-gray-100 px-2 py-1 rounded">
+                          <span className="rounded bg-gray-100 px-2 py-1">
                             {log.resourceType}
                           </span>
                         </TableCell>
                         <TableCell>
-                          {log.status === "success" ? (
+                          {log.status === 'success' ? (
                             <div className="flex items-center gap-1 text-green-600">
                               <CheckCircle className="h-4 w-4" />
                               <span className="text-xs">Success</span>
@@ -338,7 +338,7 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
                         </TableCell>
                         <TableCell className="text-xs text-gray-600">
                           {log.errorMessage ? (
-                            <span className="text-red-600 max-w-xs line-clamp-1">
+                            <span className="line-clamp-1 max-w-xs text-red-600">
                               {log.errorMessage}
                             </span>
                           ) : (
@@ -352,7 +352,7 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
               </div>
 
               {/* Pagination */}
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex items-center justify-between border-t pt-4">
                 <p className="text-xs text-gray-600">
                   Showing {(page - 1) * pageSize + 1}-
                   {Math.min(page * pageSize, logs.length)} of {logs.length}
@@ -382,13 +382,13 @@ export function AuditLogViewer({ teamId }: AuditLogViewerProps) {
               </div>
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-500">
-              <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <div className="py-8 text-center text-gray-500">
+              <Search className="mx-auto mb-2 h-8 w-8 opacity-50" />
               <p>No audit logs found</p>
             </div>
           )}
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

@@ -1,34 +1,34 @@
-import { NextResponse } from "next/server";
-import os from "os";
+import { NextResponse } from 'next/server'
+import os from 'os'
 
 export async function GET() {
-  let convexStatus: "connected" | "disconnected" = "connected";
-  let convexError: string | null = null;
+  let convexStatus: 'connected' | 'disconnected' = 'connected'
+  let convexError: string | null = null
 
   // Basic connectivity check: verify NEXT_PUBLIC_CONVEX_URL is configured
   try {
     if (!process.env.NEXT_PUBLIC_CONVEX_URL) {
-      throw new Error("NEXT_PUBLIC_CONVEX_URL not configured");
+      throw new Error('NEXT_PUBLIC_CONVEX_URL not configured')
     }
     // Additional validation: ensure it's a valid URL
-    new URL(process.env.NEXT_PUBLIC_CONVEX_URL);
+    new URL(process.env.NEXT_PUBLIC_CONVEX_URL)
   } catch (e) {
-    convexStatus = "disconnected";
+    convexStatus = 'disconnected'
     convexError =
-      e instanceof Error ? e.message : "Invalid Convex configuration";
+      e instanceof Error ? e.message : 'Invalid Convex configuration'
   }
 
-  const memoryUsage = process.memoryUsage();
+  const memoryUsage = process.memoryUsage()
   const healthInfo = {
-    status: convexStatus === "connected" ? "healthy" : "unhealthy",
+    status: convexStatus === 'connected' ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
     uptime: Math.round(process.uptime()),
     environment: process.env.NODE_ENV,
-    version: process.env.npm_package_version || "1.0.0",
+    version: process.env.npm_package_version || '1.0.0',
     backend: {
-      type: "Convex",
+      type: 'Convex',
       status: convexStatus,
-      url: process.env.NEXT_PUBLIC_CONVEX_URL ? "configured" : "missing",
+      url: process.env.NEXT_PUBLIC_CONVEX_URL ? 'configured' : 'missing',
       error: convexError,
     },
     memory: {
@@ -47,12 +47,12 @@ export async function GET() {
       loadAverage: os.loadavg(),
     },
     deployment: {
-      region: process.env.VERCEL_REGION || "unknown",
-      url: process.env.VERCEL_URL || "localhost",
+      region: process.env.VERCEL_REGION || 'unknown',
+      url: process.env.VERCEL_URL || 'localhost',
     },
-  };
+  }
 
   return NextResponse.json(healthInfo, {
-    status: convexStatus === "connected" ? 200 : 503,
-  });
+    status: convexStatus === 'connected' ? 200 : 503,
+  })
 }

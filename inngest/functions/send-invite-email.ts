@@ -1,20 +1,20 @@
-import { inngest } from "../client";
-import { ConvexHttpClient } from "convex/browser";
-import { api } from "../../convex/_generated/api";
-import nodemailer from "nodemailer";
+import { inngest } from '../client'
+import { ConvexHttpClient } from 'convex/browser'
+import { api } from '../../convex/_generated/api'
+import nodemailer from 'nodemailer'
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!);
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
 
 // Configure email transporter
 const getTransporter = () => {
-  const host = process.env.SMTP_HOST;
-  const port = parseInt(process.env.SMTP_PORT || "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
+  const host = process.env.SMTP_HOST
+  const port = parseInt(process.env.SMTP_PORT || '587')
+  const user = process.env.SMTP_USER
+  const pass = process.env.SMTP_PASS
 
   if (!host || !user || !pass) {
-    console.warn("SMTP configuration incomplete, email sending disabled");
-    return null;
+    console.warn('SMTP configuration incomplete, email sending disabled')
+    return null
   }
 
   return nodemailer.createTransport({
@@ -25,43 +25,43 @@ const getTransporter = () => {
       user,
       pass,
     },
-  });
-};
+  })
+}
 
 export const sendInviteEmailJob = inngest.createFunction(
   {
-    id: "send-invite-email",
-    triggers: { event: "auth/send-invite-email" },
+    id: 'send-invite-email',
+    triggers: { event: 'auth/send-invite-email' },
   },
   async ({ event, step }: any) => {
     const { boardId, email, userId, boardTitle, inviterName, message } =
-      event.data;
+      event.data
 
-    const inviter = await step.run("Fetch inviter details", async () => {
+    const inviter = await step.run('Fetch inviter details', async () => {
       try {
-        return await convex.query(api.users.current, {});
+        return await convex.query(api.users.current, {})
       } catch (error) {
-        console.error("Error fetching inviter details:", error);
-        return { name: inviterName || "A SecondBrains user" };
+        console.error('Error fetching inviter details:', error)
+        return { name: inviterName || 'A SecondBrains user' }
       }
-    });
+    })
 
-    const inviteToken = await step.run("Generate invite token", async () => {
+    const inviteToken = await step.run('Generate invite token', async () => {
       try {
         const result = await convex.mutation(api.invites.generateInviteToken, {
           boardId,
-        });
-        return result.token;
+        })
+        return result.token
       } catch (error) {
-        console.error("Error generating invite token:", error);
-        throw new Error("Failed to generate invite token");
+        console.error('Error generating invite token:', error)
+        throw new Error('Failed to generate invite token')
       }
-    });
+    })
 
-    const emailHtml = step.run("Build email HTML", () => {
-      const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://secondbrains.app"}/register?invite=${inviteToken}`;
+    const emailHtml = step.run('Build email HTML', () => {
+      const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://secondbrains.app'}/register?invite=${inviteToken}`
 
-      const hasCustomMessage = message && message.trim().length > 0;
+      const hasCustomMessage = message && message.trim().length > 0
 
       return `
 <!DOCTYPE html>
@@ -90,9 +90,9 @@ export const sendInviteEmailJob = inngest.createFunction(
             <p>Hi there!</p>
             <p><strong>${inviter.name || inviterName}</strong> has invited you to join a study board on <strong>SecondBrains</strong>:</p>
             
-            <h2 style="color: #667eea; margin: 20px 0;">${boardTitle || "Study Board"}</h2>
+            <h2 style="color: #667eea; margin: 20px 0;">${boardTitle || 'Study Board'}</h2>
             
-            ${hasCustomMessage ? `<div class="message-text"><strong>Message from inviter:</strong><br>${message}</div>` : ""}
+            ${hasCustomMessage ? `<div class="message-text"><strong>Message from inviter:</strong><br>${message}</div>` : ''}
             
             <p>SecondBrains is an AI-powered collaborative study platform where you can:</p>
             <ul>
@@ -121,57 +121,57 @@ export const sendInviteEmailJob = inngest.createFunction(
     </div>
 </body>
 </html>
-      `;
-    });
+      `
+    })
 
-    await step.run("Send email via SMTP", async () => {
-      const transporter = getTransporter();
+    await step.run('Send email via SMTP', async () => {
+      const transporter = getTransporter()
 
       if (!transporter) {
         console.warn(
-          "Email service not configured, skipping email send for",
+          'Email service not configured, skipping email send for',
           email,
-        );
+        )
         return {
           success: false,
-          reason: "SMTP not configured",
+          reason: 'SMTP not configured',
           saved: false,
-        };
+        }
       }
 
       try {
         const info = await transporter.sendMail({
           from: process.env.SMTP_FROM || process.env.SMTP_USER,
           to: email,
-          subject: `${inviterName || "Someone"} invited you to "${boardTitle || "a study board"}" on SecondBrains`,
+          subject: `${inviterName || 'Someone'} invited you to "${boardTitle || 'a study board'}" on SecondBrains`,
           html: emailHtml,
           replyTo: process.env.SMTP_REPLY_TO || undefined,
-        });
+        })
 
-        console.log("Email sent:", info.messageId);
+        console.log('Email sent:', info.messageId)
         return {
           success: true,
           messageId: info.messageId,
           timestamp: new Date().toISOString(),
-        };
+        }
       } catch (error) {
-        console.error("Error sending email:", error);
+        console.error('Error sending email:', error)
         throw new Error(
-          `Failed to send email: ${error instanceof Error ? error.message : "Unknown error"}`,
-        );
+          `Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        )
       }
-    });
+    })
 
-    await step.run("Log sent invitation", async () => {
+    await step.run('Log sent invitation', async () => {
       try {
         // Optional: Store in database for tracking
         console.log(
           `Invitation sent to ${email} for board ${boardId.toString()}`,
-        );
+        )
       } catch (error) {
-        console.error("Error logging invitation:", error);
+        console.error('Error logging invitation:', error)
       }
-    });
+    })
 
     return {
       success: true,
@@ -179,6 +179,6 @@ export const sendInviteEmailJob = inngest.createFunction(
       boardId: boardId.toString(),
       inviteToken,
       timestamp: new Date().toISOString(),
-    };
+    }
   },
-);
+)

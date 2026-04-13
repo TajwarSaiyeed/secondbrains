@@ -1,12 +1,12 @@
-import BoardClientPage from "./BoardClientPage";
+import BoardClientPage from './BoardClientPage'
 
 type Params = Promise<{
-  boardId: string;
-}>;
+  boardId: string
+}>
 
 const BoardPage = async ({ params }: { params: Params }) => {
-  const { boardId } = await params;
-  return <BoardClientPage boardId={boardId} />;
-};
+  const { boardId } = await params
+  return <BoardClientPage boardId={boardId} />
+}
 
-export default BoardPage;
+export default BoardPage
