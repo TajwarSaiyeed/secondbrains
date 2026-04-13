@@ -141,7 +141,6 @@ export const getTeamMembers = query({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    // Verify user is team member (can view team)
     const teamMembers = await ctx.db
       .query("teamMembers")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))

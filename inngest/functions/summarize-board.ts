@@ -13,7 +13,6 @@ export const summarizeBoardJob = inngest.createFunction(
   async ({ event, step }: any) => {
     const { boardId, userId } = event.data;
 
-    // 1. Fetch board notes
     const notes = await step.run("Fetch board notes", async () => {
       try {
         const notesList = await convex.query(api.notes.getNotesByBoard, {
@@ -26,7 +25,6 @@ export const summarizeBoardJob = inngest.createFunction(
       }
     });
 
-    // 2. Fetch board links
     const links = await step.run("Fetch board links", async () => {
       try {
         const linksList = await convex.query(api.links.getLinksByBoard, {
@@ -39,7 +37,6 @@ export const summarizeBoardJob = inngest.createFunction(
       }
     });
 
-    // 3. Generate summary using Gemini
     const summary = await step.run("Generate AI summary", async () => {
       if (notes.length === 0 && links.length === 0) {
         return "No content available to summarize.";
@@ -94,7 +91,6 @@ Please provide a detailed, organized summary that captures the essence of this b
       }
     });
 
-    // 4. Store summary in database
     await step.run("Store summary in database", async () => {
       try {
         await convex.mutation(api.ai.storeSummary, {
@@ -108,7 +104,6 @@ Please provide a detailed, organized summary that captures the essence of this b
       }
     });
 
-    // 5. Create notification for board owner
     await step.run("Notify board owner", async () => {
       try {
         await convex.mutation(api.notifications.createNotification, {
@@ -123,7 +118,6 @@ Please provide a detailed, organized summary that captures the essence of this b
         });
       } catch (error) {
         console.error("Error creating notification:", error);
-        // Don't throw - summary was still generated successfully
       }
     });
 

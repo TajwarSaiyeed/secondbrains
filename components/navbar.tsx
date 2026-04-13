@@ -21,7 +21,6 @@ export default function Navbar() {
   const session = useSession();
   const user = useQuery(api.users.current);
 
-  // Note: Handle undefined gracefully (loading state)
   const isAuthed = user !== null && user !== undefined;
   const userName = user?.name || user?.email || "Guest";
   const unreadCount = useQuery(api.notifications.countUnread) || 0;

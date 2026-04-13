@@ -8,7 +8,6 @@ import { ProfileEditForm } from "../../components/profile/profile-edit-form";
 import { ArrowLeft, User } from "lucide-react";
 
 async function ProfileContent() {
-  // Server-side auth check
   const authenticated = await isAuthenticated();
   if (!authenticated) {
     redirect("/login?from=/profile");

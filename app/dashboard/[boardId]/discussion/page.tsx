@@ -11,12 +11,10 @@ export default async function DiscussionPage({ params }: { params: Params }) {
   const user: any = await getCurrentUser();
   if (!user) redirect("/login");
 
-  // TODO: Fetch board and messages from Convex server
   const board: any = null;
 
   const messages: DiscussionMessage[] = [];
 
-  // After checks above, board is safe to access
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
       <DiscussionHeader

@@ -2,8 +2,6 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  // App-specific User table - synced from Better Auth
-  // Better Auth manages: session, account, verification, twoFactor, passkey, etc.
   user: defineTable({
     userId: v.string(), // matches Better Auth user.id
     name: v.string(),

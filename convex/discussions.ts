@@ -70,7 +70,6 @@ export const getMessages = query({
         .collect();
     }
 
-    // Map replies to full parent message structure optionally
     return Promise.all(
       messages.map(async (msg) => {
         let parentMessage = null;
@@ -112,7 +111,6 @@ export const markAsAnswer = mutation({
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
-    // Check if an answer already exists for this board
     const existingAnswer = await ctx.db
       .query("answers")
       .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
@@ -177,7 +175,6 @@ export const deleteMessage = mutation({
     const message = await ctx.db.get(args.messageId);
     if (!message) throw new Error("Message not found");
 
-    // Either the author of the message or the board owner can delete
     let canDelete = message.authorId === userId;
 
     if (!canDelete) {

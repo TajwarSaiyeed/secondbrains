@@ -13,7 +13,6 @@ export function NotificationsClient() {
   const notifications = useQuery(api.notifications.getNotifications);
   const markAllAsRead = useMutation(api.notifications.markAllAsRead);
 
-  // If undefined, loading
   const isLoading = notifications === undefined;
   const unreadCount = notifications?.filter((n) => !n.read).length || 0;
 

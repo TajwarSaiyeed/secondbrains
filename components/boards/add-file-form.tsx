@@ -77,10 +77,8 @@ export function AddFileForm({ boardId }: { boardId: string }) {
         ),
       );
 
-      // 1. Generate upload URL
       const uploadUrl = await generateUploadUrl();
 
-      // 2. Upload file to Convex storage
       const response = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": queuedFile.file.type },
@@ -91,7 +89,6 @@ export function AddFileForm({ boardId }: { boardId: string }) {
 
       const { storageId } = await response.json();
 
-      // 3. Save metadata to Convex
       setQueuedFiles((prev) =>
         prev.map((f) =>
           f.id === queuedFile.id ? { ...f, status: "processing" } : f,

@@ -29,7 +29,6 @@ export const scrapeAndEmbedLink = action({
       // Clean up script and style tags
       $("script, style, noscript, nav, footer, iframe, object").remove();
 
-      // Get text and replace multiple whitespace with single spaces
       const extractedText = $("body").text().replace(/\s+/g, " ").trim();
       const truncatedText = extractedText.slice(0, 10000); // Optional: avoid massive payloads
 
@@ -39,7 +38,6 @@ export const scrapeAndEmbedLink = action({
         scrapedContent: truncatedText,
       });
 
-      // Generate embedding based on title + description + extracted
       const combinedText = `${link.title} ${link.description} ${truncatedText}`;
       await ctx.runAction(api.embeddings.generateLinkEmbedding, {
         linkId: args.linkId,
@@ -48,7 +46,6 @@ export const scrapeAndEmbedLink = action({
     } catch (error) {
       console.error("Failed to scrape and embed url:", link.url, error);
 
-      // Still generate embedding for what we do have (title+desc)
       const fallbackText = `${link.title} ${link.description}`;
       await ctx.runAction(api.embeddings.generateLinkEmbedding, {
         linkId: args.linkId,

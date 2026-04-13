@@ -74,7 +74,6 @@ export function MessageInput({
 
   async function handleAskAI() {
     if (!message.trim() || isLoading) return;
-    // TODO: implement AI logic using askAiMessage from useDiscussionSender when ready
     console.warn("AI asking feature is not yet fully linked here");
   }
 

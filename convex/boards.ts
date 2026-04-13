@@ -13,19 +13,16 @@ export const listBoards = query({
     const userId = identity?.subject;
     if (!userId) return []; // Unauthenticated
 
-    // Get boards where the user is the owner
     const ownedBoards = await ctx.db
       .query("boards")
       .withIndex("by_owner", (q) => q.eq("ownerId", userId))
       .collect();
 
-    // Get boards where the user is a member
     const memberships = await ctx.db
       .query("boardMembers")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
 
-    // Get the actual board documents for memberships safely
     const memberBoards = await Promise.all(
       memberships.map(async (m) => await ctx.db.get(m.boardId)),
     );
@@ -68,7 +65,6 @@ export const deleteBoard = mutation({
   handler: async (ctx, args) => {
     const { userId, board } = await assertIsBoardOwner(ctx, args.boardId);
 
-    // Delete board members first to avoid orphaned records
     const members = await ctx.db
       .query("boardMembers")
       .withIndex("by_board", (q) => q.eq("boardId", args.boardId))

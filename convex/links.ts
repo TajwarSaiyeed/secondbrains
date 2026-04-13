@@ -13,7 +13,6 @@ export const insertLinkAction = mutation({
     embedding: v.optional(v.array(v.float64())),
   },
   handler: async (ctx, args) => {
-    // Fetch user by userId (string ID from better-auth)
     const user = await ctx.db
       .query("user")
       .filter((q) => q.eq(q.field("userId"), args.authorId))
@@ -70,11 +69,9 @@ export const deleteLink = mutation({
 
     let canDelete = false;
 
-    // The person who wrote the link can delete it
     if (link.authorId === userId) {
       canDelete = true;
     } else {
-      // The Board Owner can also delete it
       const board = await ctx.db.get(link.boardId);
       if (board && board.ownerId === userId) {
         canDelete = true;

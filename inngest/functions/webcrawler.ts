@@ -16,7 +16,6 @@ export const fetchAndVectorizeWebpageJob = inngest.createFunction(
   async ({ event, step }: any) => {
     const { url, boardId, authorId } = event.data;
 
-    // 1. Scraping Step
     const docs = await step.run(
       "Scrape website content via LangChain",
       async () => {
@@ -31,7 +30,6 @@ export const fetchAndVectorizeWebpageJob = inngest.createFunction(
       },
     );
 
-    // 2. Summarize the content using OpenRouter Gemma model
     const summary = await step.run(
       "Summarize content with OpenRouter Gemma",
       async () => {
@@ -40,14 +38,14 @@ export const fetchAndVectorizeWebpageJob = inngest.createFunction(
           configuration: {
             baseURL: "https://openrouter.ai/api/v1",
           },
-          modelName: "google/gemma-3-27b-it", // Recommended Gemma 3 27B from OpenRouter
+          modelName: "google/gemma-3-27b-it",
           temperature: 0.2,
         });
 
         const fullText = docs
           .map((d: any) => d.pageContent)
           .join("\n")
-          .substring(0, 15000); // safety cap
+          .substring(0, 15000);
         const response = await chat.invoke([
           [
             "system",
@@ -62,20 +60,16 @@ export const fetchAndVectorizeWebpageJob = inngest.createFunction(
       },
     );
 
-    // 3. Generate Vector Embeddings
     const embeddingsList = await step.run("Generate Embeddings", async () => {
       const embeddingsEngine = new GoogleGenerativeAIEmbeddings({
         apiKey: process.env.GEMINI_API_KEY,
-        model: "text-embedding-004", // 768 dimensions standard, adjust Convex DB later
+        model: "text-embedding-004",
       });
 
       return await embeddingsEngine.embedQuery(summary);
     });
 
-    // 4. Save to Convex Database
     await step.run("Save Link and Vector to Convex DB", async () => {
-      // NOTE: Expecting an internal mutation or we can define a new one for AI links
-      // For safe insertion inside Inngest, we bypass client auth and use internal token / service role if needed
       await convex.mutation(api.links.insertLinkAction, {
         boardId,
         url,

@@ -5,7 +5,6 @@ import { assertIsAuthenticated } from "./utils";
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    // Generate a secure upload URL from Convex storage
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -21,7 +20,6 @@ export const saveFileMetaData = mutation({
   handler: async (ctx, args) => {
     const userId = await assertIsAuthenticated(ctx);
 
-    // We can also generate a temporary or long-lived URL immediately.
     // For standard files, we can use `ctx.storage.getUrl(storageId)`
     const url = await ctx.storage.getUrl(args.storageId);
 
@@ -67,7 +65,6 @@ export const deleteFile = mutation({
     const file = await ctx.db.get(args.fileId);
     if (!file) throw new Error("File not found");
 
-    // Check authorization: uploader or board owner can delete
     let canDelete = file.uploadedBy === userId;
 
     if (!canDelete) {

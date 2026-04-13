@@ -35,7 +35,6 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
     setError("");
 
     try {
-      // 1. Insert the link into Convex immediately for real-time UI update
       await insertLink({
         boardId: boardId as any,
         url,
@@ -44,7 +43,6 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
         authorId: session?.user?.id || "",
       });
 
-      // 2. Trigger the Inngest background job for AI scraping and vectorization
       if (session?.user?.id) {
         await triggerWebScrape({
           url,

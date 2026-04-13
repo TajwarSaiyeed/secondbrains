@@ -11,7 +11,6 @@ export const performGlobalSearch = query({
     const userId = await assertIsAuthenticated(ctx);
     const limit = args.limit || 5;
 
-    // 1. Determine which boards the user has access to
     const ownedBoards = await ctx.db
       .query("boards")
       .withIndex("by_owner", (q) => q.eq("ownerId", userId))
@@ -31,7 +30,6 @@ export const performGlobalSearch = query({
 
     if (uniqueBoardIds.length === 0) return { notes: [], links: [], messages: [] };
 
-    // 2. Perform searches per board and aggregate
     const notesPromises = uniqueBoardIds.map((boardId) =>
       ctx.db
         .query("notes")

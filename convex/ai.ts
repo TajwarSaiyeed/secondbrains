@@ -30,7 +30,6 @@ export const chatWithBoard = action({
     });
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-    // Utilizing flash for lightning fast generative context reading
     const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Setup history for conversational API
@@ -156,9 +155,6 @@ export const requestSummary = mutation({
 
     if (!canAccess) throw new Error("Access denied");
 
-    // Store the request in a summaryRequests table (if it exists)
-    // This can be polled by frontend or processed by Inngest
-    // For now, just return success
     return {
       status: "requested",
       message: "AI summary generation has been queued",

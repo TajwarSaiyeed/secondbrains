@@ -33,7 +33,6 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
     setLoading(true);
 
     try {
-      // TODO: Implement discussion summarization with Convex mutation
       console.log("Summary feature not yet implemented");
       setOpen(false);
       setDays(2);

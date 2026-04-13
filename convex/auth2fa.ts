@@ -19,7 +19,6 @@ export const get2FAStatus = query({
 
     const userId = args.userId || identity.subject;
 
-    // Verify user can only see their own 2FA status
     if (args.userId && args.userId !== identity.subject) {
       throw new Error("Forbidden");
     }
@@ -56,7 +55,6 @@ export const generateTotpSecret = mutation({
 
     const userId = identity.subject;
 
-    // Generate random secret (32 bytes = 256 bits for TOTP)
     const secret = generateRandomSecret();
 
     // Create temporary unverified factor
@@ -162,7 +160,6 @@ export const verifyTotpLogin = mutation({
       throw new Error("2FA not enabled");
     }
 
-    // Verify code (allows 30 second window for time drift)
     const isValid = verifyTotpCode(totpFactor.secret!, args.code, 1);
     if (!isValid) {
       throw new Error("Invalid code");
@@ -307,9 +304,7 @@ function verifyTotpCode(
 ): boolean {
   try {
     // This is a simplified implementation
-    // In production, use 'speakeasy' or 'totp-generator' npm package
 
-    // For now, we're using a placeholder that should be replaced
     // with actual TOTP verification library
 
     // Real implementation:

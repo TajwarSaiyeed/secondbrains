@@ -37,7 +37,6 @@ export const sendInviteEmailJob = inngest.createFunction(
     const { boardId, email, userId, boardTitle, inviterName, message } =
       event.data;
 
-    // 1. Fetch inviter details
     const inviter = await step.run("Fetch inviter details", async () => {
       try {
         return await convex.query(api.users.current, {});
@@ -47,7 +46,6 @@ export const sendInviteEmailJob = inngest.createFunction(
       }
     });
 
-    // 2. Generate invite token
     const inviteToken = await step.run("Generate invite token", async () => {
       try {
         const result = await convex.mutation(api.invites.generateInviteToken, {
@@ -60,7 +58,6 @@ export const sendInviteEmailJob = inngest.createFunction(
       }
     });
 
-    // 3. Build email HTML
     const emailHtml = step.run("Build email HTML", () => {
       const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL || "https://secondbrains.app"}/register?invite=${inviteToken}`;
 
@@ -127,7 +124,6 @@ export const sendInviteEmailJob = inngest.createFunction(
       `;
     });
 
-    // 4. Send email
     await step.run("Send email via SMTP", async () => {
       const transporter = getTransporter();
 
@@ -166,11 +162,9 @@ export const sendInviteEmailJob = inngest.createFunction(
       }
     });
 
-    // 5. Log the sent invitation
     await step.run("Log sent invitation", async () => {
       try {
         // Optional: Store in database for tracking
-        // For now, just log
         console.log(
           `Invitation sent to ${email} for board ${boardId.toString()}`,
         );

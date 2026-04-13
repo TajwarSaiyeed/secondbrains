@@ -50,7 +50,6 @@ client.registerRoutes(http, (ctx) =>
   }),
 );
 
-// Internal mutation to sync a Better Auth user to the app's user table
 export const syncUserToApp = internalMutation({
   args: {
     userId: v.string(),
@@ -81,7 +80,6 @@ export const syncUserToApp = internalMutation({
   },
 });
 
-// Internal query to list users from the Better Auth component tables
 export const listComponentUsers = internalQuery({
   args: {},
   handler: async (ctx) => {

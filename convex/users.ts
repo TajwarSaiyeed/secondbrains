@@ -152,7 +152,6 @@ export const setRole = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get caller's user document to check if they're an admin
     const callerUser = await ctx.db
       .query("user")
       .withIndex("by_userId", (q) => q.eq("userId", caller.subject))

@@ -62,7 +62,6 @@ export const resolveNotes = internalQuery({
     },
   });
 
-  // Execute keyword search across tables locally for Hybrid Merging
   export const keywordSearch = internalQuery({
     args: {
       boardId: v.id("boards"),
@@ -129,7 +128,6 @@ export const resolveNotes = internalQuery({
         vector = result.embedding.values;
       } catch (error) {
         console.error("Embedding generation failed:", error);
-        // Fallback to keyword search only if embeddings fail temporarily
       }
 
       let noteResults: any[] = [];

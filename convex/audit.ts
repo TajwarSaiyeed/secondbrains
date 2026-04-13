@@ -124,7 +124,6 @@ export const getTeamAuditLog = query({
 
     const userId = identity.subject;
 
-    // Verify user is admin/owner of team - collect then filter
     const teamMembers = await ctx.db
       .query("teamMembers")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))
@@ -136,7 +135,6 @@ export const getTeamAuditLog = query({
       throw new Error("Forbidden");
     }
 
-    // Get team audit logs and filter in memory
     let logs = await ctx.db
       .query("auditLogs")
       .withIndex("by_team", (q) => q.eq("teamId", args.teamId))

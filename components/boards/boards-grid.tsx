@@ -11,9 +11,6 @@ export function BoardsGrid() {
   const boards = useQuery(api.boards.listBoards);
   const currentUser = useQuery(api.users.current);
 
-  // Quick user fetch if needed to track current user
-  // For precise current mapping if logic relies on it
-  // Usually Convex board queries resolve the owner matching natively
 
   if (boards === undefined) {
     return (

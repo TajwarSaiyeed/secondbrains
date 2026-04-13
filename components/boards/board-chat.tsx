@@ -45,7 +45,6 @@ export function BoardChat({ boardId }: { boardId: string }) {
     const userMessage = input.trim();
     setInput("");
 
-    // Add user message to UI
     const updatedMessages: Message[] = [
       ...messages,
       { role: "user", content: userMessage },
@@ -54,7 +53,6 @@ export function BoardChat({ boardId }: { boardId: string }) {
     setIsTyping(true);
 
     try {
-      // Send chat context history excluding the very first welcome message and any giant source blocks
       const history = updatedMessages
         .slice(1)
         .map((m) => ({ role: m.role, content: m.content }));
@@ -89,7 +87,7 @@ export function BoardChat({ boardId }: { boardId: string }) {
   };
 
   return (
-    <Card className="flex flex-col h-[600px] border-primary/20 shadow-lg">
+    <Card className="flex flex-col h-150 border-primary/20 shadow-lg">
       <CardHeader className="border-b bg-muted/30 pb-4">
         <div className="flex items-center gap-2">
           <div className="p-2 bg-primary/10 rounded-full">
@@ -116,7 +114,7 @@ export function BoardChat({ boardId }: { boardId: string }) {
               >
                 <div
                   className={cn(
-                    "flex-shrink-0 p-2 rounded-full",
+                    "shrink-0 p-2 rounded-full",
                     msg.role === "user"
                       ? "bg-primary text-primary-foreground"
                       : "bg-muted",
@@ -192,7 +190,7 @@ export function BoardChat({ boardId }: { boardId: string }) {
             ))}
             {isTyping && (
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 p-2 rounded-full bg-muted">
+                <div className="shrink-0 p-2 rounded-full bg-muted">
                   <Bot className="w-4 h-4" />
                 </div>
                 <div className="bg-muted/50 border rounded-2xl rounded-tl-sm px-4 py-3 text-sm flex items-center gap-1">

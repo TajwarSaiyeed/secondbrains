@@ -9,7 +9,6 @@ export const triggerWebScrape = action({
     authorId: v.id("users"),
   },
   handler: async (ctx, args) => {
-    // Send the event to Inngest which will trigger the background crawler
     await inngest.send({
       name: "board/link.added",
       data: {
@@ -32,7 +31,6 @@ export const triggerBoardSummary = action({
     const userId = identity?.subject;
     if (!userId) throw new Error("Unauthorized");
 
-    // Send the event to Inngest to generate summary
     await inngest.send({
       name: "ai/summarize-board",
       data: {
@@ -61,7 +59,6 @@ export const triggerInviteEmail = action({
     const userId = identity?.subject;
     if (!userId) throw new Error("Unauthorized");
 
-    // Send the event to Inngest to send email
     await inngest.send({
       name: "auth/send-invite-email",
       data: {

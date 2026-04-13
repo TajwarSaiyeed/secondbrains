@@ -124,7 +124,6 @@ export function GlobalSearch() {
                   key={msg._id}
                   value={msg._id + msg.content}
                   onSelect={() => {
-                    // Navigate to board discussion tab if applicable, assuming standard board route
                      runCommand(() => router.push(`/board/${msg.boardId}`));
                   }}
                 >

@@ -12,7 +12,6 @@ export const createNote = mutation({
     authorId: v.string(),
   },
   handler: async (ctx, args) => {
-    // With better-auth, authorId is passed as string from client
     if (!args.authorId) {
       throw new Error("Unauthenticated");
     }
@@ -80,11 +79,9 @@ export const deleteNote = mutation({
 
     let canDelete = false;
 
-    // The person who wrote the note can delete it
     if (note.authorId === userId) {
       canDelete = true;
     } else {
-      // The Board Owner can also delete it
       const board = await ctx.db.get(note.boardId);
       if (board && board.ownerId === userId) {
         canDelete = true;

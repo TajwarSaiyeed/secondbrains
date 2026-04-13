@@ -18,7 +18,6 @@ import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
 import { TwoFactorSection } from "../../components/settings/two-factor-section";
 
 async function SettingsContent() {
-  // Server-side auth check
   const authenticated = await isAuthenticated();
   if (!authenticated) {
     redirect("/login?from=/settings");

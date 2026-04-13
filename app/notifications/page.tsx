@@ -4,7 +4,6 @@ import { isAuthenticated } from "@/lib/auth-server";
 import { NotificationsClient } from "../../components/notifications/notifications-client";
 
 async function NotificationsContent() {
-  // Server-side auth check
   const authenticated = await isAuthenticated();
   if (!authenticated) {
     redirect("/login?from=/notifications");

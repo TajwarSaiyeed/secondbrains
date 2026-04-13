@@ -51,7 +51,6 @@ export function AISummaryCard({ boardId, aiSummary }: AISummaryCardProps) {
     setIsGenerating(false);
   }
 
-  // Check if content is long enough to need accordion
   const isLongContent = aiSummary?.content && aiSummary.content.length > 500;
   const shouldTruncate = isLongContent && !isExpanded;
 

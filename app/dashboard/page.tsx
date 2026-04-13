@@ -3,12 +3,10 @@ import { redirect } from "next/navigation";
 import { isAuthenticated } from "@/lib/auth-server";
 import { Input } from "@/components/ui/input";
 import { CreateBoardDialog } from "@/components/boards/create-board-dialog";
-// Note: BoardsGrid should be converted to 'use client' and use `useQuery(api.boards.listBoards)`
 import { BoardsGrid } from "@/components/boards/boards-grid";
 import Loading from "./loading";
 
 async function DashboardContent() {
-  // Server-side auth check (double protection via middleware + page level)
   const authenticated = await isAuthenticated();
   if (!authenticated) {
     redirect("/login?from=/dashboard");

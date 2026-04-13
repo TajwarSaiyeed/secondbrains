@@ -25,7 +25,6 @@ export const generateInviteToken = mutation({
     // Generate a unique token (UUID-like format)
     const token = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
 
-    // Store the invite token (replacing any previous one for this board)
     await ctx.db.patch(args.boardId, {
       inviteToken: token,
     });
@@ -81,7 +80,6 @@ export const acceptInvite = mutation({
 
     if (!board) throw new Error("Invalid invite token");
 
-    // Get user details from Better Auth user table
     const user = await ctx.db
       .query("user")
       .withIndex("by_userId", (q) => q.eq("userId", userId))
@@ -165,7 +163,6 @@ export const createEmailInvite = mutation({
       message: args.message,
     });
 
-    // Return inviteId - frontend should call triggerInviteEmail action to send email
     return {
       inviteId,
       status: "pending",
