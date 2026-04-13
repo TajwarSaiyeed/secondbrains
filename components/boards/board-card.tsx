@@ -42,7 +42,7 @@ export function BoardCard({ board, currentUserId }: BoardCardProps) {
     (board.files?.length || 0)
 
   return (
-    <Link href={`/dashboard/${board.id}`}>
+    <Link href={`/dashboard/${board._id || board.id}`}>
       <Card className="border-border h-full cursor-pointer transition-shadow hover:shadow-md">
         <CardHeader>
           <div className="flex items-start justify-between">
