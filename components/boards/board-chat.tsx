@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Bot, Send, User, ChevronDown, ChevronUp } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import ReactMarkdown from 'react-markdown'
 
 type Message = {
   role: 'user' | 'model'
@@ -102,7 +103,7 @@ export function BoardChat({ boardId }: { boardId: string }) {
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4 overflow-hidden p-4">
-        <ScrollArea className="-mr-4 flex-1 pr-4">
+        <ScrollArea className="h-full w-full pr-4">
           <div className="space-y-4 pb-4">
             {messages.map((msg, index) => (
               <div
@@ -134,7 +135,9 @@ export function BoardChat({ boardId }: { boardId: string }) {
                       : 'bg-muted/50 space-y-3 rounded-tl-sm border',
                   )}
                 >
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                  <div className="prose prose-sm max-w-none text-current">
+                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  </div>
 
                   {/* Render Sources if available */}
                   {msg.sources && msg.sources.length > 0 && (

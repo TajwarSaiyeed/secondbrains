@@ -47,7 +47,7 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
         await triggerWebScrape({
           url,
           boardId: boardId as any,
-          authorId: session.user.id as any,
+          authorId: session.user.id,
         })
       }
 
