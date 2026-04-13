@@ -69,8 +69,8 @@ export default defineSchema({
     })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
-      dimensions: 768, // Using Gemini's text-embedding-004 dimension
-      filterFields: ['boardId'], // Allow filtering search queries by specific board
+      dimensions: 3072,
+      filterFields: ['boardId'],
     }),
 
   links: defineTable({
@@ -98,7 +98,7 @@ export default defineSchema({
     })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
-      dimensions: 768,
+      dimensions: 3072,
       filterFields: ['boardId'],
     }),
 
