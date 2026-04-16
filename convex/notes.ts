@@ -12,8 +12,10 @@ export const createNote = mutation({
   args: {
     boardId: v.id('boards'),
     content: v.string(),
-    authorName: v.string(),
+    authorName: v.optional(v.string()),
     authorId: v.string(),
+    sourceFileId: v.optional(v.string()),
+    sourceFileName: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     if (!args.authorId) {
@@ -33,7 +35,41 @@ export const createNote = mutation({
       boardId: args.boardId,
       content: args.content,
       authorId: args.authorId,
-      authorName: user.name,
+      authorName: args.authorName || user?.name || 'Unknown',
+      sourceFileId: args.sourceFileId,
+      sourceFileName: args.sourceFileName,
+    })
+
+    // Schedule vector embedding generation
+    await ctx.scheduler.runAfter(0, api.embeddings.generateNoteEmbedding, {
+      noteId,
+      content: args.content,
+    })
+
+    return noteId
+  },
+})
+
+/**
+ * Internal mutation for character-RAG notes (triggered from inngest)
+ */
+export const insertNoteAction = mutation({
+  args: {
+    boardId: v.id('boards'),
+    content: v.string(),
+    authorId: v.string(),
+    authorName: v.string(),
+    sourceFileId: v.optional(v.string()),
+    sourceFileName: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const noteId = await ctx.db.insert('notes', {
+      boardId: args.boardId,
+      content: args.content,
+      authorId: args.authorId,
+      authorName: args.authorName,
+      sourceFileId: args.sourceFileId,
+      sourceFileName: args.sourceFileName,
     })
 
     // Schedule vector embedding generation

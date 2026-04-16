@@ -51,6 +51,31 @@ export const sendMessage = mutation({
   },
 })
 
+/**
+ * System mutation — used by Inngest AI jobs to post messages without user auth context.
+ */
+export const sendSystemMessage = mutation({
+  args: {
+    boardId: v.id('boards'),
+    content: v.string(),
+    authorName: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const board = await ctx.db.get(args.boardId)
+    if (!board) throw new Error('Board not found')
+
+    const messageId = await ctx.db.insert('messages', {
+      boardId: args.boardId,
+      content: args.content,
+      authorId: 'system',
+      authorName: args.authorName,
+      createdAt: Date.now(),
+    })
+
+    return messageId
+  },
+})
+
 export const getMessages = query({
   args: {
     boardId: v.id('boards'),
@@ -233,5 +258,38 @@ export const searchMessages = query({
         }
       }),
     )
+  },
+})
+
+export const getMessagesForSummary = query({
+  args: {
+    boardId: v.id('boards'),
+    timeframe: v.optional(v.union(v.literal('days'), v.literal('dateRange'))),
+    startDate: v.optional(v.string()),
+    endDate: v.optional(v.string()),
+    days: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    let q = ctx.db
+      .query('messages')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+
+    const messages = await q.collect()
+
+    if (args.timeframe === 'days') {
+      const days = args.days || 2
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000
+      return messages.filter((m) => m._creationTime >= cutoff)
+    }
+
+    if (args.timeframe === 'dateRange' && args.startDate) {
+      const start = new Date(args.startDate).getTime()
+      const end = args.endDate ? new Date(args.endDate).getTime() : Date.now()
+      return messages.filter(
+        (m) => m._creationTime >= start && m._creationTime <= end,
+      )
+    }
+
+    return messages.slice(-50) // Default to last 50 messages
   },
 })

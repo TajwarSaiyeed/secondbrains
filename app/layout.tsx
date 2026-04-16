@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import AuthProvider from '@/providers/auth-provider'
 import { Toaster } from '@/components/ui/sonner'
 import Navbar from '@/components/navbar'
+import { TooltipProvider } from '@/components/ui/tooltip'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -47,9 +48,16 @@ export default async function RootLayout({
               enableSystem
               disableTransitionOnChange
             >
-              <Navbar />
-              {children}
-              <Toaster richColors closeButton position="top-right" />
+              <TooltipProvider>
+                <Navbar />
+                <div className="flex min-h-screen flex-col">
+                  <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6 lg:px-8">
+                    {children}
+                  </main>
+                </div>
+
+                <Toaster richColors closeButton position="top-right" />
+              </TooltipProvider>
             </ThemeProvider>
           </ConvexClientProvider>
         </AuthProvider>

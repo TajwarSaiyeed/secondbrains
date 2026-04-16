@@ -48,7 +48,7 @@ export const fetchAndVectorizeWebpageJob = inngest.createFunction(
             configuration: {
               baseURL: 'https://openrouter.ai/api/v1',
             },
-            modelName: 'google/gemma-3-27b-it',
+            modelName: 'google/gemma-4-31b-it:free',
             temperature: 0.2,
           })
 

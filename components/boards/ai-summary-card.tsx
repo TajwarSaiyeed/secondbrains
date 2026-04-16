@@ -13,6 +13,7 @@ import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import type { SyntaxHighlighterProps } from 'react-syntax-highlighter'
+import { sendInngestEventFromClient } from '@/lib/inngest-client'
 
 interface AISummaryCardProps {
   boardId: string
@@ -35,17 +36,44 @@ export function AISummaryCard({ boardId, aiSummary }: AISummaryCardProps) {
     setError('')
 
     try {
+      // Try via Convex action (works in production with INNGEST_EVENT_KEY)
       const result = await triggerSummary({ boardId: boardId as any })
       if (result.success) {
-        toast.success('Summary generation queued! Check back in a moment.')
+        // If useProxy flag is set, fall through to proxy call
+        if (result.useProxy) {
+          try {
+            await sendInngestEventFromClient('ai/summarize-board', {
+              boardId,
+              userId: 'local-dev',
+            })
+            toast.success('Summary generation queued via local proxy!')
+          } catch (proxyErr) {
+            const message =
+              proxyErr instanceof Error ? proxyErr.message : 'Unknown error'
+            setError(message)
+            toast.error(message)
+          }
+        } else {
+          toast.success('Summary generation queued! Check back in a moment.')
+        }
       } else {
         setError('Failed to queue summary generation')
         toast.error('Failed to queue summary generation')
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      setError(message)
-      toast.error(message)
+      // Fallback: send via local proxy (works in local dev)
+      try {
+        await sendInngestEventFromClient('ai/summarize-board', {
+          boardId,
+          userId: 'local-dev',
+        })
+        toast.success('Summary generation queued via local proxy!')
+      } catch (proxyErr) {
+        const message =
+          proxyErr instanceof Error ? proxyErr.message : 'Unknown error'
+        setError(message)
+        toast.error(message)
+      }
     }
 
     setIsGenerating(false)

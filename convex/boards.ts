@@ -290,3 +290,43 @@ export const joinViaInviteToken = mutation({
     return board._id
   },
 })
+
+export const getBoardMembersWithDetails = query({
+  args: { boardId: v.id('boards') },
+  handler: async (ctx, args) => {
+    const board = await ctx.db.get(args.boardId)
+    if (!board) return []
+
+    const members = await ctx.db
+      .query('boardMembers')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+      .collect()
+
+    // Get owner details
+    const owner = await ctx.db
+      .query('user')
+      .withIndex('by_userId', (q) => q.eq('userId', board.ownerId))
+      .first()
+
+    const allMembers = [
+      {
+        _id: 'owner-' + board.ownerId,
+        userId: board.ownerId,
+        name: owner?.name || 'Owner',
+        email: owner?.email || '',
+        imageUrl: owner?.image,
+        role: 'owner',
+      },
+      ...members.map((m) => ({
+        _id: m._id,
+        userId: m.userId,
+        name: m.name,
+        email: m.email,
+        imageUrl: undefined, // Add image if available in user table
+        role: m.role,
+      })),
+    ]
+
+    return allMembers
+  },
+})

@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { NotificationList } from '@/components/notifications/notification-list'
-import { ArrowLeft, Bell, CheckCheck, Loader2 } from 'lucide-react'
+import { Bell, CheckCheck, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
+import { BreadcrumbNav } from '@/components/breadcrumb-nav'
 
 export function NotificationsClient() {
   const notifications = useQuery(api.notifications.getNotifications)
@@ -27,14 +28,15 @@ export function NotificationsClient() {
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto max-w-4xl p-6">
+        <BreadcrumbNav
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Notifications', isCurrent: true },
+          ]}
+        />
+
         <div className="mb-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Dashboard
-              </Button>
-            </Link>
             <div className="flex items-center gap-2">
               <Bell className="text-primary h-6 w-6" />
               <h1 className="text-2xl font-bold">Notifications</h1>
@@ -45,6 +47,14 @@ export function NotificationsClient() {
               )}
             </div>
           </div>
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Mark all as read
+            </Button>
+          )}
+        </div>
+        <div>
           {unreadCount > 0 && (
             <Button variant="outline" size="sm" onClick={handleMarkAllAsRead}>
               <CheckCheck className="mr-2 h-4 w-4" />

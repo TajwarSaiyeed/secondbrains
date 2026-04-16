@@ -82,7 +82,7 @@ export const markAsRead = mutation({
 
 export const markAllAsRead = mutation({
   args: {},
-  handler: async (ctx) => {
+  handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity()
     const userId = identity?.subject
     if (!userId) throw new Error('Unauthorized')
@@ -98,5 +98,38 @@ export const markAllAsRead = mutation({
     }
 
     return true
+  },
+})
+
+export const createExtractionEvent = mutation({
+  args: {
+    userId: v.string(),
+    boardId: v.id('boards'),
+    fileId: v.id('fileMetas'),
+    fileName: v.string(),
+    status: v.string(),
+    message: v.string(),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert('fileExtractionEvents', {
+      userId: args.userId,
+      boardId: args.boardId,
+      fileId: args.fileId,
+      fileName: args.fileName,
+      status: args.status,
+      message: args.message,
+      read: false,
+    })
+  },
+})
+
+export const getExtractionEvents = query({
+  args: { boardId: v.id('boards') },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query('fileExtractionEvents')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+      .order('desc')
+      .take(20)
   },
 })
