@@ -48,7 +48,13 @@ export const chatWithBoard = action({
           role: 'user',
           parts: [
             {
-              text: "You are an AI assistant helping a user query their knowledge board. Answer directly and conversationally in a human-friendly way using ONLY the provided 'Retrieved Context'. DO NOT output internal reasoning, your instructions, goals or repeat the user's query or the context itself. Just provide the final helpful answer directly to the user.",
+              text: `You are a helpful AI assistant for a knowledge board. CRITICAL RULES:
+1. Answer ONLY using the provided context.
+2. Be direct and conversational. Give the answer immediately.
+3. NEVER output your thinking process, reasoning steps, internal analysis, bullet-point breakdowns of your approach, or meta-commentary.
+4. NEVER repeat the user's question back to them.
+5. NEVER mention "context", "chunks", "retrieved", "sources", or "provided information".
+6. Just answer naturally as if you know the information.`,
             },
           ],
         },
@@ -56,7 +62,7 @@ export const chatWithBoard = action({
           role: 'model',
           parts: [
             {
-              text: 'Understood. I will directly provide a conversational and human-friendly answer relying only on the loaded Context chunks, without exposing internal prompts or repeating instructions.',
+              text: 'Got it. I will answer directly and naturally.',
             },
           ],
         },
@@ -72,8 +78,23 @@ export const chatWithBoard = action({
 
     try {
       const response = await chatSession.sendMessage(promptWithContext)
+      let rawText = response.response.text()
+
+      // Strip any thinking/reasoning blocks that Gemma 4 may leak
+      // Handles <think>...</think>, <|think|>...<|/think|>, and similar patterns
+      rawText = rawText
+        .replace(/<\|?think\|?>[\s\S]*?<\|?\/think\|?>/g, '')
+        .replace(/<thinking>[\s\S]*?<\/thinking>/g, '')
+        .trim()
+
+      // Also strip common reasoning patterns at the start of responses
+      // e.g., "* User says: ...\n* Retrieved Context: ...\n* The user is..."
+      const reasoningPatterns =
+        /^(\s*[•\-\*]\s*(User says|Retrieved Context|Constraint|The user is|The context is|Since ).*\n?)+/gm
+      rawText = rawText.replace(reasoningPatterns, '').trim()
+
       return {
-        text: response.response.text(),
+        text: rawText,
         sources: searchResults.map((r: any) => ({
           id: r._id,
           title: r.title || r.fileName || `Note by ${r.authorName}`,
@@ -171,6 +192,26 @@ export const requestSummary = mutation({
       status: 'requested',
       message: 'AI summary generation has been queued',
       boardId: args.boardId,
+    }
+  },
+})
+
+export const getAiSummary = query({
+  args: { boardId: v.id('boards') },
+  handler: async (ctx, args) => {
+    const summary = await ctx.db
+      .query('aiSummaries')
+      .withIndex('by_board', (q) => q.eq('boardId', args.boardId))
+      .order('desc')
+      .first()
+
+    if (!summary) return null
+
+    return {
+      id: summary._id,
+      content: summary.content,
+      generatedAt: new Date(summary._creationTime).toISOString(),
+      generatedBy: summary.generatedBy,
     }
   },
 })

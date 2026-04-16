@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { getUser } from '@/actions/profile'
 import { ProfileEditForm } from '../../components/profile/profile-edit-form'
-import { ArrowLeft, User } from 'lucide-react'
+import { User } from 'lucide-react'
+import { BreadcrumbNav } from '@/components/breadcrumb-nav'
 
 async function ProfileContent() {
   const authenticated = await isAuthenticated()
@@ -19,16 +20,18 @@ async function ProfileContent() {
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8">
+        <BreadcrumbNav
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Profile', isCurrent: true },
+          ]}
+        />
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <User className="text-primary h-6 w-6" />
             <h1 className="text-2xl font-bold">Profile</h1>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-            </Link>
-          </Button>
         </div>
 
         <ProfileEditForm

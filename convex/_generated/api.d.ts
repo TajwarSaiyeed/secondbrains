@@ -23,7 +23,6 @@ import type * as links from "../links.js";
 import type * as notes from "../notes.js";
 import type * as notifications from "../notifications.js";
 import type * as presence from "../presence.js";
-import type * as scrape from "../scrape.js";
 import type * as search from "../search.js";
 import type * as teams from "../teams.js";
 import type * as users from "../users.js";
@@ -51,7 +50,6 @@ declare const fullApi: ApiFromModules<{
   notes: typeof notes;
   notifications: typeof notifications;
   presence: typeof presence;
-  scrape: typeof scrape;
   search: typeof search;
   teams: typeof teams;
   users: typeof users;

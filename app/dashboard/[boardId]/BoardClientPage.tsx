@@ -2,183 +2,143 @@
 
 import { useQuery, useMutation } from 'convex/react'
 import { api } from '@/convex/_generated/api'
-import { notFound, redirect } from 'next/navigation'
-import Link from 'next/link'
-import { AddNoteForm } from '@/components/boards/add-note-form'
-import { AddLinkForm } from '@/components/boards/add-link-form'
-import { AddFileForm } from '@/components/boards/add-file-form'
-import { NoteCard } from '@/components/boards/note-card'
-import { LinkCard } from '@/components/boards/link-card'
-import { FileCard } from '@/components/boards/file-card'
-import { AISummaryCard } from '@/components/boards/ai-summary-card'
+import { notFound, redirect, useRouter, useParams } from 'next/navigation'
+import { BoardHeader } from '@/components/boards/BoardHeader'
+import { SourcesPanel } from '@/components/boards/SourcesPanel'
 import { BoardChat } from '@/components/boards/board-chat'
-import { InviteUsersDialog } from '@/components/boards/invite-users-dialog'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import { StudioPanel } from '@/components/boards/studio-panel'
 import { Separator } from '@/components/ui/separator'
-import { Users } from 'lucide-react'
+import { FileExtractionToast } from '@/components/notifications/file-extraction-toast'
+import { Sparkles } from 'lucide-react'
 import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogCancel,
-  AlertDialogTrigger,
-  AlertDialogAction,
-} from '@/components/ui/alert-dialog'
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@/components/ui/resizable'
 import { useAuth } from '@/lib/auth-client'
 import { useState } from 'react'
+import { Skeleton } from '@/components/ui/skeleton'
 
-export default function BoardClientPage({ boardId }: { boardId: string }) {
-  const currentUser = useQuery(api.users.current)
+export default function BoardClientPage({
+  boardId: boardIdProp,
+}: {
+  boardId: string
+}) {
+  const router = useRouter()
+  const params = useParams()
+  const boardId = boardIdProp || (params.boardId as string)
   const { data: session } = useAuth()
   const isAuthenticated = !!session
-  const board = useQuery(api.boards.getBoardDetails, {
-    boardId:
-      boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
-  })
-  const notes = useQuery(api.notes.getNotesByBoard, {
-    boardId:
-      boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
-  })
-  const links = useQuery(api.links.getLinksByBoard, {
-    boardId:
-      boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
-  })
-  const files = useQuery(api.files.getFilesByBoard, {
-    boardId:
-      boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
-  })
+
+  const boardIdTyped =
+    boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>
+
+  const currentUser = useQuery(api.users.current)
+  const board = useQuery(api.boards.getBoardDetails, { boardId: boardIdTyped })
+  const notes = useQuery(api.notes.getNotesByBoard, { boardId: boardIdTyped })
+  const links = useQuery(api.links.getLinksByBoard, { boardId: boardIdTyped })
+  const files = useQuery(api.files.getFilesByBoard, { boardId: boardIdTyped })
+  const aiSummary = useQuery(api.ai.getAiSummary, { boardId: boardIdTyped })
+
   const deleteBoard = useMutation(api.boards.deleteBoard)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [activeTab, setActiveTab] = useState('notes')
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated && session !== undefined) {
     redirect('/login')
   }
 
-  if (board === undefined) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        Loading board...
-      </div>
-    )
-  }
+  const isOwner = board?.ownerId === currentUser?.userId
 
   if (board === null) {
     return notFound()
   }
 
-  const isOwner = currentUser && board.ownerId === currentUser.userId
-
-  return (
-    <div className="container mx-auto space-y-8 px-4 py-8">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-foreground text-2xl font-bold">{board.title}</h1>
-          <p className="text-muted-foreground">{board.description}</p>
+  // Loading state
+  if (!board || !notes || !links || !files) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-6 w-1/4" />
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-1/3" />
+          <Skeleton className="h-10 w-1/4" />
         </div>
-        <div className="flex items-center gap-2">
-          <Button asChild variant="default" size="sm">
-            <Link href={`/dashboard/${boardId}/discussion`}>Discussion</Link>
-          </Button>
-          <InviteUsersDialog boardId={boardId} boardTitle={board.title} />
-          {isOwner && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="bg-red-600 hover:bg-red-700"
-                >
-                  Delete Board
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this board?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This action cannot be undone. All notes, links, files, and
-                    discussions on this board will be permanently deleted.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={async () => {
-                      setIsDeleting(true)
-                      try {
-                        await deleteBoard({
-                          boardId:
-                            boardId as unknown as import('convex/_generated/dataModel').Id<'boards'>,
-                        })
-                        redirect('/dashboard')
-                      } catch (e) {
-                        console.error(e)
-                      } finally {
-                        setIsDeleting(false)
-                      }
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      disabled={isDeleting}
-                    >
-                      {isDeleting ? 'Deleting...' : 'Confirm Delete'}
-                    </Button>
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+        <div className="notebook-layout">
+          <Skeleton className="notebook-panel h-full" />
+          <div className="notebook-panel">
+            <div className="notebook-panel-body">
+              <Skeleton className="h-full" />
+            </div>
+          </div>
+          <Skeleton className="notebook-panel h-full" />
         </div>
       </div>
+    )
+  }
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        <div className="space-y-6 md:col-span-2">
-          <div className="flex flex-col gap-4">
-            <AddNoteForm boardId={boardId} />
-            <AddLinkForm boardId={boardId} />
-            <AddFileForm boardId={boardId} />
-          </div>
+  const sourceCount = notes.length + links.length + files.length
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {notes?.map((note) => (
-              <NoteCard
-                key={note._id}
-                note={note}
-                boardId={boardId}
-                currentUserId={session?.user?.id || ''}
-              />
-            ))}
-            {links?.map((link) => (
-              <LinkCard
-                key={link._id}
-                link={link}
-                boardId={boardId}
-                currentUserId={session?.user?.id || ''}
-              />
-            ))}
-            {files?.map((file) => (
-              <FileCard
-                key={file._id}
-                file={file}
-                boardId={boardId}
-                canDelete={isOwner || file.uploadedBy === session?.user?.id}
-              />
-            ))}
-          </div>
-        </div>
+  return (
+    <div className="flex h-full flex-col gap-4 overflow-hidden">
+      <BoardHeader
+        board={board}
+        isOwner={isOwner}
+        isDeleting={isDeleting}
+        setIsDeleting={setIsDeleting}
+        deleteBoard={deleteBoard}
+        boardId={boardId}
+      />
 
-        <div className="space-y-6">
-          <AISummaryCard boardId={boardId} />
-          <BoardChat boardId={boardId} />
-          {/* Other board widgets like member list can go here */}
-        </div>
+      <Separator className="shrink-0" />
+
+      <FileExtractionToast boardId={boardId} />
+
+      {/* Main 3-Column Content (NotebookLM Style) */}
+      <div className="min-h-0 flex-1">
+        <ResizablePanelGroup className="h-full">
+          {/* Left Column: Sources (25%) */}
+          <ResizablePanel minSize={20}>
+            <SourcesPanel
+              boardId={boardId}
+              notes={notes}
+              links={links}
+              files={files}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              sourceCount={sourceCount}
+            />
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* ── Center Column: Chat ── */}
+          <ResizablePanel minSize={30}>
+            <div className="notebook-panel">
+              <div className="notebook-panel-header">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="text-primary h-4 w-4" />
+                  <span className="text-sm font-semibold">AI Chat</span>
+                </div>
+              </div>
+              <div className="notebook-panel-body overflow-hidden p-0">
+                <BoardChat boardId={boardId} />
+              </div>
+            </div>
+          </ResizablePanel>
+
+          <ResizableHandle withHandle />
+
+          {/* ── Right Column: Studio ── */}
+          <ResizablePanel minSize={20}>
+            <div className="h-full overflow-hidden">
+              <StudioPanel
+                boardId={boardId}
+                aiSummary={aiSummary ?? undefined}
+                sourceCount={sourceCount}
+              />
+            </div>
+          </ResizablePanel>
+        </ResizablePanelGroup>
       </div>
     </div>
   )

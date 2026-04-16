@@ -1,6 +1,7 @@
 import { mutation, query } from './_generated/server'
 import { v } from 'convex/values'
 import { assertIsAuthenticated } from './utils'
+import { api } from './_generated/api'
 
 export const generateUploadUrl = mutation({
   args: {},
@@ -37,7 +38,61 @@ export const saveFileMetaData = mutation({
       uploadedBy: userId,
     })
 
+    // Trigger extraction job via Inngest (scheduled as action)
+    await ctx.scheduler.runAfter(0, api.inngestTrigger.triggerFileExtraction, {
+      fileId: fileMetaId,
+      storageId: args.storageId,
+      fileUrl: url,
+      fileName: args.name,
+      fileType: args.type,
+      boardId: args.boardId,
+    })
+
     return fileMetaId
+  },
+})
+
+export const updateExtractionStatus = mutation({
+  args: {
+    fileId: v.id('fileMetas'),
+    status: v.union(
+      v.literal('pending'),
+      v.literal('extracting'),
+      v.literal('summarizing'),
+      v.literal('embedding'),
+      v.literal('completed'),
+      v.literal('failed'),
+    ),
+    statusMessage: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.fileId, {
+      status: args.status,
+      statusMessage: args.statusMessage,
+    })
+  },
+})
+
+export const saveFileEmbedding = mutation({
+  args: {
+    fileId: v.id('fileMetas'),
+    embedding: v.array(v.float64()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.fileId, { embedding: args.embedding })
+  },
+})
+
+export const updateExtractedContent = mutation({
+  args: {
+    fileId: v.id('fileMetas'),
+    content: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.fileId, {
+      extractedContent: args.content,
+    })
+    // Embeddings for file content are generated in the Inngest extract-file job
   },
 })
 

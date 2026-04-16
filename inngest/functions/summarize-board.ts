@@ -96,7 +96,7 @@ Please provide a detailed, organized summary that captures the essence of this b
         await convex.mutation(api.ai.storeSummary, {
           boardId,
           content: summary,
-          generatedBy: 'gemini-2.0-flash',
+          generatedBy: 'google/gemma-4-31b-it:free',
         })
       } catch (error) {
         console.error('Error storing summary:', error)

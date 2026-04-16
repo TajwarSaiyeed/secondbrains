@@ -29,7 +29,7 @@ export const performGlobalSearch = query({
     const uniqueBoardIds = Array.from(new Set(allowedBoardIds))
 
     if (uniqueBoardIds.length === 0)
-      return { notes: [], links: [], messages: [] }
+      return { notes: [], links: [], messages: [], files: [] }
 
     const notesPromises = uniqueBoardIds.map((boardId) =>
       ctx.db
@@ -58,16 +58,27 @@ export const performGlobalSearch = query({
         .take(limit),
     )
 
-    const [allNotes, allMessages, allLinks] = await Promise.all([
+    const filesPromises = uniqueBoardIds.map((boardId) =>
+      ctx.db
+        .query('fileMetas')
+        .withSearchIndex('search_name', (q) =>
+          q.search('name', args.searchQuery).eq('boardId', boardId),
+        )
+        .take(limit),
+    )
+
+    const [allNotes, allMessages, allLinks, allFiles] = await Promise.all([
       Promise.all(notesPromises),
       Promise.all(messagesPromises),
       Promise.all(linksPromises),
+      Promise.all(filesPromises),
     ])
 
     return {
       notes: allNotes.flat().slice(0, limit * 2),
       messages: allMessages.flat().slice(0, limit * 2),
       links: allLinks.flat().slice(0, limit * 2),
+      files: allFiles.flat().slice(0, limit * 2),
     }
   },
 })

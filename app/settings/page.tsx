@@ -14,8 +14,9 @@ import { getUser } from '@/actions/profile'
 import { ChangePasswordForm } from '../../components/settings/change-password-form'
 import { NotificationSettingsForm } from '../../components/settings/notification-settings-form'
 import { DangerZone } from '../../components/settings/danger-zone'
-import { Settings as SettingsIcon, ArrowLeft } from 'lucide-react'
+import { Settings as SettingsIcon } from 'lucide-react'
 import { TwoFactorSection } from '../../components/settings/two-factor-section'
+import { BreadcrumbNav } from '@/components/breadcrumb-nav'
 
 async function SettingsContent() {
   const authenticated = await isAuthenticated()
@@ -29,16 +30,18 @@ async function SettingsContent() {
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto max-w-4xl space-y-8 px-4 py-8">
+        <BreadcrumbNav
+          items={[
+            { label: 'Dashboard', href: '/dashboard' },
+            { label: 'Settings', isCurrent: true },
+          ]}
+        />
+
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <SettingsIcon className="text-primary h-6 w-6" />
             <h1 className="text-2xl font-bold">Settings</h1>
           </div>
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/dashboard">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
-            </Link>
-          </Button>
         </div>
 
         <div className="grid gap-8">

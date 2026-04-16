@@ -73,7 +73,9 @@ export function AddFileForm({ boardId }: { boardId: string }) {
     try {
       setQueuedFiles((prev) =>
         prev.map((f) =>
-          f.id === queuedFile.id ? { ...f, status: 'uploading' } : f,
+          f.id === queuedFile.id
+            ? { ...f, status: 'uploading', progress: 10 }
+            : f,
         ),
       )
 
@@ -91,7 +93,9 @@ export function AddFileForm({ boardId }: { boardId: string }) {
 
       setQueuedFiles((prev) =>
         prev.map((f) =>
-          f.id === queuedFile.id ? { ...f, status: 'processing' } : f,
+          f.id === queuedFile.id
+            ? { ...f, status: 'processing', progress: 50 }
+            : f,
         ),
       )
 
@@ -102,12 +106,25 @@ export function AddFileForm({ boardId }: { boardId: string }) {
         type: queuedFile.file.type,
         storageId: storageId,
       })
+
+      setQueuedFiles((prev) =>
+        prev.map((f) =>
+          f.id === queuedFile.id
+            ? { ...f, status: 'completed', progress: 100 }
+            : f,
+        ),
+      )
     } catch (err) {
       console.error(err)
       setQueuedFiles((prev) =>
         prev.map((f) =>
           f.id === queuedFile.id
-            ? { ...f, status: 'error', error: (err as Error).message }
+            ? {
+                ...f,
+                status: 'error',
+                progress: 0,
+                error: (err as Error).message,
+              }
             : f,
         ),
       )

@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { UserPlus, X, Mail, Copy, Check } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { sendInngestEventFromClient } from '@/lib/inngest-client'
 
 export function InviteUsersDialog({
   boardId,
@@ -93,21 +94,41 @@ export function InviteUsersDialog({
     try {
       // Send email invites for each email address
       for (const email of emails) {
-        // Create the invite record in DB
+        // Create the invite record in DB and get the token
         const inviteResult = await createEmailInvite({
           boardId: boardId as any,
           email,
         })
 
         if (inviteResult && 'inviteId' in inviteResult) {
-          // Trigger the email sending via Inngest
-          await triggerInviteEmail({
+          // Generate token ourselves so we always have it (for fallback path)
+          const tokenResult = await generateInviteToken({
             boardId: boardId as any,
-            email,
-            boardTitle: boardTitle || 'a shared board',
-            inviterName: userName || 'SecondBrains User',
-            message: message || '',
           })
+          const inviteToken =
+            (tokenResult as any)?.token ||
+            (tokenResult as any)?.link?.split('invite=')[1]
+
+          // Trigger the email sending via Inngest
+          try {
+            await triggerInviteEmail({
+              boardId: boardId as any,
+              email,
+              boardTitle: boardTitle || 'a shared board',
+              inviterName: userName || 'SecondBrains User',
+              message: message || '',
+            })
+          } catch {
+            // Fallback: send via local proxy for dev — now with inviteToken
+            await sendInngestEventFromClient('auth/send-invite-email', {
+              boardId,
+              email,
+              boardTitle: boardTitle || 'a shared board',
+              inviterName: userName || 'SecondBrains User',
+              message: message || '',
+              inviteToken,
+            }).catch(() => {})
+          }
         }
       }
 

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Brain, Bell, LogOut, Settings, User, Menu } from 'lucide-react'
+import { Brain, Bell, LogOut, Settings, User, Menu, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -24,6 +24,7 @@ export default function Navbar() {
   const isAuthed = user !== null && user !== undefined
   const userName = user?.name || user?.email || 'Guest'
   const unreadCount = useQuery(api.notifications.countUnread) || 0
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin'
 
   return (
     <header className="border-border bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
@@ -74,6 +75,18 @@ export default function Navbar() {
                     <span className="sr-only">Profile</span>
                   </Button>
                 </Link>
+                {isAdmin && (
+                  <Link href="/dashboard/users">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="cursor-pointer gap-1.5"
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Users</span>
+                    </Button>
+                  </Link>
+                )}
                 <Link href="/settings">
                   <Button variant="ghost" size="sm" className="cursor-pointer">
                     <Settings className="h-4 w-4" />
@@ -171,6 +184,17 @@ export default function Navbar() {
                           Settings
                         </Button>
                       </Link>
+                      {isAdmin && (
+                        <Link href="/dashboard/users">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            Users
+                          </Button>
+                        </Link>
+                      )}
                       <div className="mt-3 border-t pt-3">
                         <Button
                           variant="destructive"
@@ -269,6 +293,17 @@ export default function Navbar() {
                           Settings
                         </Button>
                       </Link>
+                      {isAdmin && (
+                        <Link href="/dashboard/users">
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start"
+                          >
+                            <Users className="mr-2 h-4 w-4" />
+                            Users
+                          </Button>
+                        </Link>
+                      )}
                       <div className="flex items-center justify-between px-2 py-2">
                         <span className="text-sm font-medium">Theme</span>
                         <ThemeToggle />

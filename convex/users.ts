@@ -127,6 +127,38 @@ export const listAll = query({
 })
 
 /**
+ * Get all users with board counts and metadata
+ */
+export const listWithCounts = query({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query('user').collect()
+    const boardMembers = await ctx.db.query('boardMembers').collect()
+    const boards = await ctx.db.query('boards').collect()
+
+    // Count boards owned by each user
+    const ownedByUser = new Map<string, number>()
+    for (const board of boards) {
+      const count = ownedByUser.get(board.ownerId) || 0
+      ownedByUser.set(board.ownerId, count + 1)
+    }
+
+    // Count boards where user is a member (owned or invited)
+    const memberOfUser = new Map<string, number>()
+    for (const member of boardMembers) {
+      const count = memberOfUser.get(member.userId) || 0
+      memberOfUser.set(member.userId, count + 1)
+    }
+
+    return users.map((user) => ({
+      ...user,
+      ownedBoards: ownedByUser.get(user.userId) || 0,
+      totalBoards: memberOfUser.get(user.userId) || 0,
+    }))
+  },
+})
+
+/**
  * Get total user count
  */
 export const count = query({

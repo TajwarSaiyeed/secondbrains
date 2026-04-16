@@ -29,7 +29,7 @@ async function main() {
     configuration: {
       baseURL: 'https://openrouter.ai/api/v1',
     },
-    modelName: 'google/gemma-4-31b-it:free',
+    modelName: 'google/gemma-4-31b-it:free:free',
     temperature: 0.5,
   })
 

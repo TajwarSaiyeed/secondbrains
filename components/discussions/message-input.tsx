@@ -45,6 +45,7 @@ export function MessageInput({
     error: senderError,
     sendTextMessage,
     sendVoiceMessage,
+    askAiMessage,
   } = useDiscussionSender({
     boardId,
     replyToId,
@@ -74,7 +75,12 @@ export function MessageInput({
 
   async function handleAskAI() {
     if (!message.trim() || isLoading) return
-    console.warn('AI asking feature is not yet fully linked here')
+    try {
+      await askAiMessage(message)
+      setMessage('')
+    } catch (err) {
+      console.error('Failed to ask AI:', err)
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {

@@ -37,6 +37,28 @@ export const generateInviteToken = mutation({
 })
 
 /**
+ * Internal version of generateInviteToken for background jobs
+ */
+export const generateInviteTokenInternal = mutation({
+  args: {
+    boardId: v.id('boards'),
+  },
+  handler: async (ctx, args) => {
+    // No auth check since it's internal
+    const board = await ctx.db.get(args.boardId)
+    if (!board) throw new Error('Board not found')
+
+    const token = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+
+    await ctx.db.patch(args.boardId, {
+      inviteToken: token,
+    })
+
+    return { token }
+  },
+})
+
+/**
  * Get board info by invite token (for accepting invites)
  */
 export const getBoardByInviteToken = query({

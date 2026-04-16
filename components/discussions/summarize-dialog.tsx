@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { useAction } from 'convex/react'
+import { api } from '@/convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +16,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { Sparkles, Calendar, MessageSquare, Loader2 } from 'lucide-react'
+import { sendInngestEventFromClient } from '@/lib/inngest-client'
 
 interface SummarizeDialogProps {
   boardId: string
@@ -22,6 +25,7 @@ interface SummarizeDialogProps {
 export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const triggerSummary = useAction(api.inngestTrigger.triggerDiscussionSummary)
   const [summaryType, setSummaryType] = useState<'days' | 'dateRange'>('days')
   const [days, setDays] = useState(2)
   const [startDate, setStartDate] = useState('')
@@ -32,15 +36,34 @@ export function SummarizeDialog({ boardId }: SummarizeDialogProps) {
 
     setLoading(true)
 
+    const eventData = {
+      boardId: boardId,
+      timeframe: summaryType,
+      days: summaryType === 'days' ? days : undefined,
+      startDate: summaryType === 'dateRange' ? startDate : undefined,
+      endDate: summaryType === 'dateRange' ? endDate : undefined,
+    }
+
     try {
-      console.log('Summary feature not yet implemented')
+      await triggerSummary({
+        boardId: boardId as any,
+        timeframe: summaryType,
+        days: summaryType === 'days' ? days : undefined,
+        startDate: summaryType === 'dateRange' ? startDate : undefined,
+        endDate: summaryType === 'dateRange' ? endDate : undefined,
+      })
       setOpen(false)
-      setDays(2)
-      setStartDate('')
-      setEndDate('')
-      setSummaryType('days')
     } catch (error) {
-      console.error('Error summarizing discussion:', error)
+      // Fallback: send via local proxy (works in local dev)
+      try {
+        await sendInngestEventFromClient(
+          'board/discussion.summarize',
+          eventData,
+        )
+        setOpen(false)
+      } catch (proxyErr) {
+        console.error('Error summarizing discussion:', proxyErr)
+      }
     } finally {
       setLoading(false)
     }

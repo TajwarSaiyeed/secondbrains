@@ -13,6 +13,7 @@ import { Plus, X } from 'lucide-react'
 import { useMutation, useAction } from 'convex/react'
 import { api } from '@/convex/_generated/api'
 import { useSession } from '@/lib/auth-client'
+import { sendInngestEventFromClient } from '@/lib/inngest-client'
 
 interface AddLinkFormProps {
   boardId: string
@@ -44,12 +45,29 @@ export function AddLinkForm({ boardId }: AddLinkFormProps) {
       })
 
       if (session?.user?.id) {
-        await triggerWebScrape({
-          url,
-          boardId: boardId as any,
-          authorId: session.user.id,
-          linkId: newLinkId,
-        })
+        try {
+          await triggerWebScrape({
+            url,
+            boardId: boardId as any,
+            authorId: session.user.id,
+            linkId: newLinkId,
+          })
+        } catch (err) {
+          console.error('triggerWebScrape failed, attempting fallback:', err)
+          // Fallback: send via local proxy for dev
+          try {
+            await sendInngestEventFromClient('board/link.added', {
+              url,
+              boardId,
+              authorId: session.user.id,
+              linkId: newLinkId,
+            })
+          } catch (fallbackErr) {
+            console.error('Inngest fallback also failed:', fallbackErr)
+            // We don't throw here because the link is already created in Convex
+            // but we could notify the user that scraping might be delayed.
+          }
+        }
       }
 
       setUrl('')

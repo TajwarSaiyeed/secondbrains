@@ -120,9 +120,50 @@ export default defineSchema({
     url: v.string(),
     uploadedBy: v.string(),
     extractedContent: v.optional(v.string()),
+    embedding: v.optional(v.array(v.float64())), // Vector embedding for file content
+    status: v.optional(
+      v.union(
+        v.literal('pending'),
+        v.literal('extracting'),
+        v.literal('summarizing'),
+        v.literal('embedding'),
+        v.literal('completed'),
+        v.literal('failed'),
+      ),
+    ),
+    statusMessage: v.optional(v.string()),
   })
     .index('by_board', ['boardId'])
-    .index('by_uploader', ['uploadedBy']),
+    .index('by_uploader', ['uploadedBy'])
+    .index('by_status', ['status'])
+    .searchIndex('search_name', {
+      searchField: 'name',
+      filterFields: ['boardId'],
+    })
+    .searchIndex('search_content', {
+      searchField: 'extractedContent',
+      filterFields: ['boardId'],
+    })
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 3072,
+      filterFields: ['boardId'],
+    }),
+
+  // File Extraction Event Log (for real-time UI toasts)
+  fileExtractionEvents: defineTable({
+    userId: v.string(),
+    boardId: v.id('boards'),
+    fileId: v.id('fileMetas'),
+    fileName: v.string(),
+    status: v.string(), // "started", "extracting", "summarizing", "embedding", "completed", "failed"
+    message: v.string(),
+    read: v.boolean(),
+  })
+    .index('by_user', ['userId'])
+    .index('by_board', ['boardId'])
+    .index('by_file', ['fileId'])
+    .index('by_user_read', ['userId', 'read']),
 
   aiSummaries: defineTable({
     boardId: v.id('boards'),

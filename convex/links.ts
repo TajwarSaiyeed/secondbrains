@@ -30,9 +30,9 @@ export const insertLinkAction = mutation({
     })
 
     if (!args.embedding) {
-      await ctx.scheduler.runAfter(0, api.scrape.scrapeAndEmbedLink, {
-        linkId,
-      })
+      // We no longer use the internal Convex scraper.
+      // Scraping is now handled exclusively by the Inngest-based crawler
+      // triggered from the frontend via triggerWebScrape.
     }
 
     return linkId

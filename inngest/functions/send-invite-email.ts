@@ -46,17 +46,11 @@ export const sendInviteEmailJob = inngest.createFunction(
       }
     })
 
-    const inviteToken = await step.run('Generate invite token', async () => {
-      try {
-        const result = await convex.mutation(api.invites.generateInviteToken, {
-          boardId,
-        })
-        return result.token
-      } catch (error) {
-        console.error('Error generating invite token:', error)
-        throw new Error('Failed to generate invite token')
-      }
-    })
+    const inviteToken = event.data.inviteToken
+
+    if (!inviteToken) {
+      throw new Error('No invite token provided in event data')
+    }
 
     const emailHtml = step.run('Build email HTML', () => {
       const inviteUrl = `${process.env.NEXT_PUBLIC_SITE_URL || 'https://secondbrains.app'}/register?invite=${inviteToken}`

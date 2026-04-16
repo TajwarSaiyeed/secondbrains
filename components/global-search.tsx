@@ -7,6 +7,7 @@ import { api } from '@/convex/_generated/api'
 import {
   Search,
   FileText,
+  Files as FileIcon,
   Link as LinkIcon,
   MessageSquare,
   Loader2,
@@ -84,7 +85,8 @@ export function GlobalSearch() {
           {results &&
             results.notes.length === 0 &&
             results.messages.length === 0 &&
-            results.links.length === 0 && (
+            results.links.length === 0 &&
+            results.files.length === 0 && (
               <CommandEmpty>No results found.</CommandEmpty>
             )}
 
@@ -145,6 +147,26 @@ export function GlobalSearch() {
                     <span className="truncate text-sm">
                       {msg.content.substring(0, 50)}...
                     </span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          )}
+          {results && results.messages.length > 0 && <CommandSeparator />}
+
+          {results && results.files && results.files.length > 0 && (
+            <CommandGroup heading="Files">
+              {results.files.map((file) => (
+                <CommandItem
+                  key={file._id}
+                  value={file._id + file.name}
+                  onSelect={() => {
+                    runCommand(() => router.push(`/dashboard/${file.boardId}`))
+                  }}
+                >
+                  <FileIcon className="mr-2 h-4 w-4" />
+                  <div className="flex flex-col">
+                    <span className="truncate font-medium">{file.name}</span>
                   </div>
                 </CommandItem>
               ))}
